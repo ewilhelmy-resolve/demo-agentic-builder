@@ -29,7 +29,9 @@ import UsersSettingsPage from "./pages/UsersSettingsPage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { VerifyEmailSentPage } from "./pages/VerifyEmailSentPage";
 import TicketsPage2 from "./pages/TicketsPage2";
-import AgentBuilderPage from "./components/agent-builder/AgentBuilderPage";
+import AgentBuilderPageOld from "./components/agent-builder/AgentBuilderPage";
+import AgentsPage from "./pages/AgentsPage";
+import AgentBuilderPage from "./pages/AgentBuilderPage";
 
 // Feature-flagged tickets page wrapper
 function TicketsPageWithFlag() {
@@ -165,6 +167,18 @@ const router = createBrowserRouter([
 	},
 	{
 		path: "/agent-builder",
+		element: <AgentBuilderPageOld />,
+	},
+	{
+		path: "/agents",
+		element: <AgentsPage />,
+	},
+	{
+		path: "/agents/create",
+		element: <AgentBuilderPage />,
+	},
+	{
+		path: "/agents/:id",
 		element: <AgentBuilderPage />,
 	},
 	// Test pages (public)

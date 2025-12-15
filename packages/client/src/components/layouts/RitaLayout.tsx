@@ -311,20 +311,18 @@ function RitaLayoutContent({ children, activePage = "chat" }: RitaLayoutProps) {
 										</span>
 									</SidebarMenuButton>
 								</SidebarMenuItem>
-								{import.meta.env.DEV && (
-									<SidebarMenuItem>
-										<SidebarMenuButton
-											className="flex items-center gap-2 px-2 py-2 h-8 rounded-md"
-											onClick={() => navigate("/agent-builder")}
-											isActive={location.pathname === "/agent-builder"}
-										>
-											<Bot className="w-4 h-4" />
-											<span className="text-sm text-sidebar-foreground">
-												Agent Builder
-											</span>
-										</SidebarMenuButton>
-									</SidebarMenuItem>
-								)}
+								<SidebarMenuItem>
+								<SidebarMenuButton
+									className="flex items-center gap-2 px-2 py-2 h-8 rounded-md"
+									onClick={() => navigate("/agents")}
+									isActive={location.pathname.startsWith("/agents")}
+								>
+									<Bot className="w-4 h-4" />
+									<span className="text-sm text-sidebar-foreground">
+										Agents
+									</span>
+								</SidebarMenuButton>
+							</SidebarMenuItem>
 								{import.meta.env.DEV && (
 									<SidebarMenuItem>
 										<SidebarMenuButton
