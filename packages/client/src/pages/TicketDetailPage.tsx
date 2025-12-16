@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { TicketDetailSidebar } from "@/components/tickets/TicketDetailSidebar";
 import { TicketTrendsChart } from "@/components/tickets/TicketTrendsChart";
 import { TicketDetailTable } from "@/components/tickets/TicketDetailTable";
+import { ReviewFeedbackBanner } from "@/components/tickets/ReviewFeedbackBanner";
 
 const badges = [
 	{ text: "976 tickets", variant: "secondary" as const },
@@ -29,6 +30,9 @@ export default function TicketDetailPage() {
 				{/* Main Content */}
 				<div className="flex-1 p-4">
 					<div className="flex flex-col gap-4">
+						{/* Review Feedback Banner */}
+						{id && <ReviewFeedbackBanner clusterId={id} />}
+
 						{/* Page Header */}
 						<div className="flex flex-col gap-4 lg:flex-row lg:items-center">
 							<h1 className="text-xl font-medium">{title}</h1>
