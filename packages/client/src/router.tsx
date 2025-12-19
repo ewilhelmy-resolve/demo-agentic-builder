@@ -4,7 +4,9 @@ import {
 	RouterProvider,
 } from "react-router-dom";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
-import { RoleProtectedRoute } from "./components/auth/RoleProtectedRoute";
+import type { RoleProtectedRoute as _RoleProtectedRoute } from "./components/auth/RoleProtectedRoute";
+
+const IS_DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
 import { RootLayout } from "./components/layouts/RootLayout";
 import { SSEProvider } from "./contexts/SSEContext";
 import { useFeatureFlag } from "./hooks/useFeatureFlags";
@@ -32,6 +34,7 @@ import TicketsPage2 from "./pages/TicketsPage2";
 import AgentBuilderPageOld from "./components/agent-builder/AgentBuilderPage";
 import AgentsPage from "./pages/AgentsPage";
 import AgentBuilderPage from "./pages/AgentBuilderPage";
+import AgentTestPage from "./pages/AgentTestPage";
 
 // Feature-flagged tickets page wrapper
 function TicketsPageWithFlag() {
@@ -49,10 +52,10 @@ function ChatV1PageWithSSE() {
 }
 
 const router = createBrowserRouter([
-	// Root redirect
+	// Root redirect - demo mode goes to agents, normal mode to chat
 	{
 		path: "/",
-		element: <Navigate to="/chat" replace />,
+		element: <Navigate to={IS_DEMO_MODE ? "/agents" : "/chat"} replace />,
 	},
 	// Main application routes
 	{
@@ -181,6 +184,10 @@ const router = createBrowserRouter([
 		path: "/agents/:id",
 		element: <AgentBuilderPage />,
 	},
+	{
+		path: "/agents/test",
+		element: <AgentTestPage />,
+	},
 	// Test pages (public)
 	{
 		path: "/test/dropdown",
@@ -193,7 +200,8 @@ const router = createBrowserRouter([
 		children: [
 			{
 				path: "/login",
-				element: <SignUpPage />,
+				// In demo mode, redirect to agents instead of showing login page
+				element: IS_DEMO_MODE ? <Navigate to="/agents" replace /> : <SignUpPage />,
 			},
 			{
 				path: "/verify-email",

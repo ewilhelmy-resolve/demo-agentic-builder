@@ -11,7 +11,7 @@ import { Card } from '@/components/ui/card';
 import {
   ArrowLeft, MessageSquare, FileText, Zap, Save, Rocket,
   Upload, X, Sparkles, ChevronRight, ToggleRight, Send,
-  FileQuestion, Bot, Workflow,
+  FileQuestion, Bot,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────

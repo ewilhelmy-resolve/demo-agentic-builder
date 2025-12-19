@@ -28,6 +28,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { WizardAgentBuilder } from "@/components/agents/WizardAgentBuilder";
+import { WizardFloatBuilder } from "@/components/agents/WizardFloatBuilder";
 
 interface Message {
   id: string;
@@ -316,6 +318,9 @@ export default function AgentBuilderPage() {
 
   // Publish modal state
   const [showPublishModal, setShowPublishModal] = useState(false);
+
+  // Builder mode toggle (for demo purposes)
+  const [builderMode, setBuilderMode] = useState<"chat" | "wizard" | "wizard-float">("chat");
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -1344,8 +1349,113 @@ export default function AgentBuilderPage() {
     });
   };
 
+  // Mode switcher component
+  const ModeSwitcher = () => (
+    <div className="fixed bottom-4 left-4 z-50 flex gap-2">
+      <Button
+        variant={builderMode === "chat" ? "default" : "outline"}
+        size="sm"
+        onClick={() => setBuilderMode("chat")}
+        className={cn("gap-2", builderMode !== "chat" && "bg-white shadow-lg")}
+      >
+        <MessageSquare className="size-4" />
+        Chat
+      </Button>
+      <Button
+        variant={builderMode === "wizard" ? "default" : "outline"}
+        size="sm"
+        onClick={() => setBuilderMode("wizard")}
+        className={cn("gap-2", builderMode !== "wizard" && "bg-white shadow-lg")}
+      >
+        <FileText className="size-4" />
+        Wizard
+      </Button>
+      <Button
+        variant={builderMode === "wizard-float" ? "default" : "outline"}
+        size="sm"
+        onClick={() => setBuilderMode("wizard-float")}
+        className={cn("gap-2", builderMode !== "wizard-float" && "bg-white shadow-lg")}
+      >
+        <Sparkles className="size-4" />
+        Wizard + AI
+      </Button>
+    </div>
+  );
+
+  // If wizard mode is selected, render the WizardAgentBuilder
+  if (builderMode === "wizard") {
+    return (
+      <>
+        <ModeSwitcher />
+        <WizardAgentBuilder
+          initialConfig={{
+            name: config.name,
+            description: config.description,
+            role: config.role,
+            completionCriteria: config.completionCriteria,
+            iconId: config.iconId,
+            iconColorId: config.iconColorId,
+            agentType: config.agentType,
+          }}
+          onBack={handleBack}
+          onPublish={(wizardConfig) => {
+            setConfig((prev) => ({
+              ...prev,
+              name: wizardConfig.name,
+              description: wizardConfig.description,
+              role: wizardConfig.role,
+              completionCriteria: wizardConfig.completionCriteria,
+              iconId: wizardConfig.iconId,
+              iconColorId: wizardConfig.iconColorId,
+              agentType: wizardConfig.agentType,
+            }));
+            setShowPublishModal(true);
+          }}
+          isEditing={isEditing}
+        />
+      </>
+    );
+  }
+
+  // If wizard-float mode is selected, render the WizardFloatBuilder
+  if (builderMode === "wizard-float") {
+    return (
+      <>
+        <ModeSwitcher />
+        <WizardFloatBuilder
+          initialConfig={{
+            name: config.name,
+            description: config.description,
+            role: config.role,
+            completionCriteria: config.completionCriteria,
+            iconId: config.iconId,
+            iconColorId: config.iconColorId,
+            agentType: config.agentType,
+          }}
+          onBack={handleBack}
+          onPublish={(wizardConfig) => {
+            setConfig((prev) => ({
+              ...prev,
+              name: wizardConfig.name,
+              description: wizardConfig.description,
+              role: wizardConfig.role,
+              completionCriteria: wizardConfig.completionCriteria,
+              iconId: wizardConfig.iconId,
+              iconColorId: wizardConfig.iconColorId,
+              agentType: wizardConfig.agentType,
+            }));
+            setShowPublishModal(true);
+          }}
+          isEditing={isEditing}
+        />
+      </>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-muted/50">
+      <ModeSwitcher />
+
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-white border-b">
         <div className="flex items-center gap-3">

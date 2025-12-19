@@ -81,6 +81,7 @@ import { SUPPORTED_DOCUMENT_TYPES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "@/stores/conversationStore";
 import type { DataSourceConnection } from "@/types/dataSource";
+import { assetPath } from "@/utils/assets";
 import { memo } from "react";
 
 export interface RitaLayoutProps {
@@ -94,7 +95,7 @@ export interface RitaLayoutProps {
 const RitaLogo = memo(() => (
 	<div
 		className="w-[179px] h-[18px] bg-no-repeat bg-center bg-contain"
-		style={{ backgroundImage: "url('/logo-rita.svg')" }}
+		style={{ backgroundImage: `url('${assetPath("/logo-rita.svg")}')` }}
 		role="img"
 		aria-label="RITA Logo"
 	/>
@@ -552,17 +553,17 @@ function RitaLayoutContent({ children, activePage = "chat" }: RitaLayoutProps) {
 												Connect sources
 												<div className="ml-auto flex gap-1 pl-8">
 													<img
-														src="/connections/icon_confluence.svg"
+														src={assetPath("/connections/icon_confluence.svg")}
 														alt=""
 														className="h-4 w-4"
 													/>
 													<img
-														src="/connections/icon_sharepoint.svg"
+														src={assetPath("/connections/icon_sharepoint.svg")}
 														alt=""
 														className="h-4 w-4"
 													/>
 													<img
-														src="/connections/icon_servicenow.svg"
+														src={assetPath("/connections/icon_servicenow.svg")}
 														alt=""
 														className="h-4 w-4"
 													/>
@@ -581,7 +582,7 @@ function RitaLayoutContent({ children, activePage = "chat" }: RitaLayoutProps) {
 															}
 														>
 															<img
-																src={`/connections/icon_${source.type}.svg`}
+																src={assetPath(`/connections/icon_${source.type}.svg`)}
 																alt=""
 																className="h-4 w-4 mr-2"
 															/>

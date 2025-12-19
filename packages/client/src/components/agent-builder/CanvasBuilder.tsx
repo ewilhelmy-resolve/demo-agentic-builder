@@ -413,7 +413,7 @@ function StepNode({ step, isSelected, onSelect, onMove, onConnect, allSteps }: S
 // Step Config Components
 // ─────────────────────────────────────────────────────────────────────
 
-function ActionStepConfig({ step, onChange }: { step: WorkflowStep; onChange: (u: Partial<WorkflowStep>) => void }) {
+function ActionStepConfig({ step: _step, onChange: _onChange }: { step: WorkflowStep; onChange: (u: Partial<WorkflowStep>) => void }) {
   return (
     <div className="space-y-3">
       <div>
@@ -446,7 +446,7 @@ function ActionStepConfig({ step, onChange }: { step: WorkflowStep; onChange: (u
   );
 }
 
-function ConditionStepConfig({ step, onChange }: { step: WorkflowStep; onChange: (u: Partial<WorkflowStep>) => void }) {
+function ConditionStepConfig({ step: _step, onChange: _onChange }: { step: WorkflowStep; onChange: (u: Partial<WorkflowStep>) => void }) {
   return (
     <div className="space-y-3">
       <div>
@@ -478,7 +478,7 @@ function ConditionStepConfig({ step, onChange }: { step: WorkflowStep; onChange:
   );
 }
 
-function PromptStepConfig({ step, onChange }: { step: WorkflowStep; onChange: (u: Partial<WorkflowStep>) => void }) {
+function PromptStepConfig({ step: _step, onChange: _onChange }: { step: WorkflowStep; onChange: (u: Partial<WorkflowStep>) => void }) {
   return (
     <div className="space-y-3">
       <div>

@@ -13,13 +13,16 @@ import RitaLayout from "@/components/layouts/RitaLayout";
 import { AgentCard } from "@/components/agents/AgentCard";
 import { AgentsTable, type Agent } from "@/components/agents/AgentsTable";
 import { CreateAgentDialog } from "@/components/agents/CreateAgentDialog";
+import { AgentTemplateModal, type AgentTemplate } from "@/components/agents/AgentTemplateModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
+  DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   Plus,
@@ -31,6 +34,8 @@ import {
   Headphones,
   ShieldCheck,
   Key,
+  FileText,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 
@@ -161,6 +166,7 @@ export default function AgentsPage() {
   const [ownerFilter, setOwnerFilter] = useState<FilterOwner>("all");
   const [statusFilter, setStatusFilter] = useState<FilterType>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
 
   // Dynamic agents list (includes newly published agents)
   const [agents, setAgents] = useState<Agent[]>(mockAgents);
@@ -249,6 +255,16 @@ export default function AgentsPage() {
     setCreateDialogOpen(false);
   };
 
+  const handleSelectTemplate = (template: AgentTemplate) => {
+    // Navigate to agent builder with template data pre-populated
+    navigate("/agents/create", {
+      state: {
+        agentName: template.name,
+        template: template,
+      }
+    });
+  };
+
   const handleAgentClick = (agent: Agent) => {
     navigate(`/agents/${agent.id}`);
   };
@@ -263,10 +279,32 @@ export default function AgentsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-serif text-card-foreground">Agents</h1>
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="size-4" />
-            Create agent
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="size-4" />
+                Create agent
+                <ChevronDown className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => setCreateDialogOpen(true)} className="gap-2">
+                <FileText className="size-4" />
+                <div>
+                  <div className="font-medium">From scratch</div>
+                  <div className="text-xs text-muted-foreground">Start with a blank agent</div>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setTemplateModalOpen(true)} className="gap-2">
+                <Sparkles className="size-4" />
+                <div>
+                  <div className="font-medium">From template</div>
+                  <div className="text-xs text-muted-foreground">Use a pre-built template</div>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Main content card */}
@@ -412,6 +450,12 @@ export default function AgentsPage() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onCreateAgent={handleCreateAgent}
+      />
+
+      <AgentTemplateModal
+        open={templateModalOpen}
+        onOpenChange={setTemplateModalOpen}
+        onSelectTemplate={handleSelectTemplate}
       />
     </RitaLayout>
   );

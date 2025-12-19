@@ -1,9 +1,11 @@
+import { assetPath } from "@/utils/assets";
+
 export default function TicketsComingSoon() {
 	return (
 		<div className="flex flex-col items-center gap-6 w-full max-w-[1120px] mx-auto">
 
 			<img
-				src="/images/ticketcomingsoon.png"
+				src={assetPath("/images/ticketcomingsoon.png")}
 				className="w-[338px] h-[231px] object-fill"
 				alt="Tickets coming soon"
 			/>

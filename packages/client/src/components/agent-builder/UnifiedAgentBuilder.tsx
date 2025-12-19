@@ -19,12 +19,12 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
-  Bot, MessageSquare, FileText, Zap, ChevronRight, ChevronDown,
+  Bot, MessageSquare, FileText, Zap, ChevronDown,
   Play, Square, ArrowRight, Plus, Send, Upload, Check, X,
-  AlertTriangle, Info, Eye, TestTube, Rocket, Settings, RefreshCw,
+  AlertTriangle, TestTube, Rocket, Settings, RefreshCw,
   FileQuestion, Shield, Database, GitBranch, Clock, History,
   Sparkles, CheckCircle2, XCircle, AlertCircle, Loader2,
-  ChevronLeft, MoreHorizontal, Save, Copy,
+  ChevronLeft, Save,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────
@@ -619,7 +619,6 @@ function LifecycleBar({ status, onStatusChange, validationErrors }: LifecycleBar
         {LIFECYCLE_STATES.map((state, i) => {
           const isActive = state.value === status;
           const isPast = i < currentIndex;
-          const isFuture = i > currentIndex;
           const canClick = i <= currentIndex + 1 && !hasErrors;
 
           return (
@@ -1008,7 +1007,7 @@ interface WorkflowPanelProps {
   setConfig: React.Dispatch<React.SetStateAction<AgentConfig>>;
 }
 
-function WorkflowPanel({ config, setConfig }: WorkflowPanelProps) {
+function WorkflowPanel({ config, setConfig: _setConfig }: WorkflowPanelProps) {
   return (
     <div className="flex-1 flex flex-col bg-slate-50 overflow-hidden">
       <div className="p-3 border-b bg-white flex items-center justify-between">
@@ -1023,8 +1022,8 @@ function WorkflowPanel({ config, setConfig }: WorkflowPanelProps) {
 
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-md mx-auto space-y-3">
-          {config.steps.map((step, i) => (
-            <WorkflowStepCard key={step.id} step={step} index={i} isLast={i === config.steps.length - 1} />
+          {config.steps.map((step, idx) => (
+            <WorkflowStepCard key={step.id} step={step} index={idx} isLast={idx === config.steps.length - 1} />
           ))}
 
           {config.steps.length === 0 && (
@@ -1061,7 +1060,7 @@ function WorkflowPanel({ config, setConfig }: WorkflowPanelProps) {
   );
 }
 
-function WorkflowStepCard({ step, index, isLast }: { step: WorkflowStep; index: number; isLast: boolean }) {
+function WorkflowStepCard({ step, index: _index, isLast }: { step: WorkflowStep; index: number; isLast: boolean }) {
   const stepConfig: Record<string, { icon: typeof Play; color: string; bg: string }> = {
     start: { icon: Play, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
     rag: { icon: FileQuestion, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200' },
@@ -1121,7 +1120,7 @@ function ChatTestPanel({
   showTestPanel,
   setShowTestPanel,
   isRunningTest,
-  config,
+  config: _config,
 }: ChatTestPanelProps) {
   return (
     <div className="w-96 bg-white border-l flex flex-col shrink-0">

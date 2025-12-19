@@ -11,9 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import {
-  Check, ChevronRight, FileText, Link2, FolderOpen, RefreshCw,
-  Sparkles, Play, Zap, Upload, X, Plus, Loader2, Edit2, Trash2,
-  MessageSquare, Settings, Rocket, ChevronDown
+  Check, ChevronRight, FileText,
+  Sparkles, Play, Upload, X, Plus, Loader2, Edit2,
+  MessageSquare, Settings, Rocket,
 } from 'lucide-react';
 import type { AgentDefinition, AgentType } from './types';
 import { AGENT_TYPE_META } from './types';
@@ -1154,7 +1154,7 @@ function WorkflowPickerAction({
 function ConfigPanelAction({
   config,
   setConfig,
-  agentType,
+  agentType: _agentType,
   completed,
   onConfirm,
 }: {

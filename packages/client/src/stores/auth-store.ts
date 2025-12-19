@@ -6,6 +6,7 @@ import { AuthError, type AuthStore, type User, keycloakProfileToUser } from "../
 import type { KeycloakProfile } from "keycloak-js";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+const IS_DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
 
 // Helper to ensure user is always User type
 const normalizeUser = (user: User | KeycloakProfile | null): User | null => {
@@ -73,19 +74,21 @@ const useAuthStore = create<AuthStore>()(
 				});
 			};
 
-			// Initialize event listeners immediately
-			setupEventListeners();
+			// Initialize event listeners immediately (skip in demo mode)
+			if (!IS_DEMO_MODE) {
+				setupEventListeners();
+			}
 
 			return {
-				// Initial state
-				authenticated: false,
-				loading: true,
-				initialized: false,
-				user: null,
-				token: null,
+				// Initial state - in demo mode, pretend we're already authenticated
+				authenticated: IS_DEMO_MODE ? true : false,
+				loading: IS_DEMO_MODE ? false : true,
+				initialized: IS_DEMO_MODE ? true : false,
+				user: IS_DEMO_MODE ? { id: 'demo-user', email: 'demo@example.com', firstName: 'Demo', lastName: 'User' } as User : null,
+				token: IS_DEMO_MODE ? 'demo-token' : null,
 				refreshToken: null,
 				tokenExpiry: null,
-				sessionReady: false,
+				sessionReady: IS_DEMO_MODE ? true : false,
 				sessionExpiry: null,
 				loginRedirectPath: null,
 				error: null,
@@ -93,6 +96,12 @@ const useAuthStore = create<AuthStore>()(
 
 				// Actions
 				initialize: async () => {
+					// In demo mode, already initialized via initial state
+					if (IS_DEMO_MODE) {
+						console.log("AuthStore: Demo mode - skipping initialization");
+						return;
+					}
+
 					const state = get();
 					if (state.initialized) {
 						console.log("AuthStore: Already initialized");

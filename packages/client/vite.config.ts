@@ -5,6 +5,8 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Base path for GitHub Pages - set to repo name
+  base: process.env.GITHUB_PAGES ? '/demo-agentic-builder/' : '/',
   server: {
     port: 5173,
     host: true,

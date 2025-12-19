@@ -7,9 +7,13 @@ import { useProfile } from "@/hooks/api/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { usePendo } from "@/hooks/usePendo";
 import { CrashPage } from "@/components/CrashPage";
+import { DemoPasswordGate } from "@/components/auth/DemoPasswordGate";
 import { CitationProvider } from "./contexts/CitationContext";
 import { QueryProvider } from "./providers/QueryProvider";
 import { AppRouter } from "./router";
+
+// Check if running on GitHub Pages (demo mode)
+const IS_DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
 
 const AppContent: React.FC = () => {
 	const { authenticated, sessionReady, logout } = useAuth();
@@ -69,7 +73,31 @@ const AppContent: React.FC = () => {
 	);
 };
 
+// Demo mode content - bypasses auth
+const DemoAppContent: React.FC = () => {
+	return (
+		<>
+			<AppRouter />
+			<Toaster />
+		</>
+	);
+};
+
 const App: React.FC = () => {
+	// Demo mode: simple password gate, no Keycloak
+	if (IS_DEMO_MODE) {
+		return (
+			<QueryProvider>
+				<CitationProvider defaultVariant="collapsible-list">
+					<DemoPasswordGate>
+						<DemoAppContent />
+					</DemoPasswordGate>
+				</CitationProvider>
+			</QueryProvider>
+		);
+	}
+
+	// Normal mode: full auth
 	return (
 		<QueryProvider>
 			<CitationProvider defaultVariant="collapsible-list">

@@ -22,6 +22,7 @@ import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useProfile, useProfilePermissions } from "@/hooks/api/useProfile";
+import { assetPath } from "@/utils/assets";
 
 interface WelcomeDialogProps {
 	open: boolean;
@@ -136,7 +137,7 @@ export default function WelcomeDialog({
 					{/* Right side - Visual mockup (desktop only) */}
 					<div className="hidden lg:flex flex-col gap-2 items-center justify-center w-full lg:max-w-lg">
 						<img
-							src="/images/welcome-modal-mockup.png"
+							src={assetPath("/images/welcome-modal-mockup.png")}
 							alt="RITA Go chat interface showing password reset conversation"
 							className="w-full h-full rounded-2xl object-cover"
 						/>

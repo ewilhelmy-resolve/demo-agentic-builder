@@ -68,6 +68,7 @@ import {
 	SUPPORTED_DOCUMENT_TYPES,
 	validateFileForUpload,
 } from "@/lib/constants";
+import { assetPath } from "@/utils/assets";
 import { useFeatureFlag } from "@/hooks/useFeatureFlags";
 import { renderSortIcon } from "@/lib/table-utils";
 import { cn } from "@/lib/utils";
@@ -669,17 +670,17 @@ export default function FilesV1Content() {
 								Connect sources
 								<div className="ml-auto flex gap-1 pl-8">
 									<img
-										src="/connections/icon_confluence.svg"
+										src={assetPath("/connections/icon_confluence.svg")}
 										alt=""
 										className="h-4 w-4"
 									/>
 									<img
-										src="/connections/icon_sharepoint.svg"
+										src={assetPath("/connections/icon_sharepoint.svg")}
 										alt=""
 										className="h-4 w-4"
 									/>
 									<img
-										src="/connections/icon_servicenow.svg"
+										src={assetPath("/connections/icon_servicenow.svg")}
 										alt=""
 										className="h-4 w-4"
 									/>
@@ -698,7 +699,7 @@ export default function FilesV1Content() {
 											}
 										>
 											<img
-												src={`/connections/icon_${source.type}.svg`}
+												src={assetPath(`/connections/icon_${source.type}.svg`)}
 												alt=""
 												className="h-4 w-4 mr-2"
 											/>

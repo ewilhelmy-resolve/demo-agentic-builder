@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { assetPath } from "@/utils/assets";
 
 /**
  * Zod Schema for Reset Password Form
@@ -220,7 +221,7 @@ export default function ResetPasswordPage() {
 						<div className="w-full flex justify-center items-start">
 							<div className="w-6 h-6 flex justify-start items-center">
 								<img
-									src="/logo-mark.svg"
+									src={assetPath("/logo-mark.svg")}
 									alt="RITA Go Logo"
 									width="24"
 									height="24"

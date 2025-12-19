@@ -6,6 +6,7 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc && vite build",
+		"build:gh-pages": "VITE_DEMO_MODE=true GITHUB_PAGES=true tsc && VITE_DEMO_MODE=true GITHUB_PAGES=true vite build",
 		"preview": "vite preview",
 		"type-check": "tsc --noEmit",
 		"lint": "biome lint . --diagnostic-level=error",

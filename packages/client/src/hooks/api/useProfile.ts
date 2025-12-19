@@ -4,6 +4,26 @@ import { organizationApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth-store'
 import type { UserProfile, OrganizationRole } from '@/types/profile'
 
+const IS_DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
+
+// Mock profile for demo mode
+const DEMO_PROFILE: UserProfile = {
+  user: {
+    id: 'demo-user',
+    email: 'demo@example.com',
+    firstName: 'Demo',
+    lastName: 'User',
+    username: 'demo',
+  },
+  organization: {
+    id: 'demo-org',
+    name: 'Demo Organization',
+    role: 'admin' as OrganizationRole,
+    memberCount: 1,
+    createdAt: new Date().toISOString(),
+  },
+};
+
 // Query keys
 export const profileKeys = {
   all: ['profile'] as const,
@@ -55,6 +75,11 @@ export function useProfile() {
   return useQuery({
     queryKey: profileKeys.detail(),
     queryFn: async () => {
+      // In demo mode, return mock profile without API call
+      if (IS_DEMO_MODE) {
+        return DEMO_PROFILE;
+      }
+
       if (!authUser) {
         throw new Error('User not authenticated')
       }
@@ -80,10 +105,10 @@ export function useProfile() {
 
       return profile
     },
-    enabled: authenticated && sessionReady && !!authUser,
+    enabled: IS_DEMO_MODE || (authenticated && sessionReady && !!authUser),
     staleTime: 1000 * 60 * 5, // 5 minutes (profile data doesn't change often)
     gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
-    retry: 2,
+    retry: IS_DEMO_MODE ? 0 : 2,
   })
 }
 
@@ -113,8 +138,8 @@ export function useProfile() {
 export function useProfilePermissions() {
   const { data: profile } = useProfile()
 
-  // DEMO MODE: always return admin permissions in dev
-  if (import.meta.env.DEV) {
+  // DEMO MODE: always return admin permissions in dev or demo mode
+  if (import.meta.env.DEV || IS_DEMO_MODE) {
     return {
       hasRole: () => true,
       isOwner: () => true,

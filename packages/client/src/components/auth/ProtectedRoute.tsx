@@ -3,6 +3,9 @@ import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/auth-store.ts';
 import { SSEProvider } from '@/contexts/SSEContext';
 
+// Check if running in demo mode (GitHub Pages)
+const IS_DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
+
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
@@ -10,6 +13,11 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { authenticated, loading, initialized, error } = useAuthStore();
   const apiUrl = import.meta.env.VITE_API_URL || '';
+
+  // In demo mode, skip all auth checks and just render children
+  if (IS_DEMO_MODE) {
+    return <>{children}</>;
+  }
 
   // Wait for initialization to complete
   if (!initialized || loading) {
