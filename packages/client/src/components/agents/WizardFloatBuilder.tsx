@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import {
   ArrowLeft,
   Send,
@@ -26,22 +25,10 @@ import {
   Key,
   BookOpen,
   Plus,
-  Trash2,
-  Edit2,
-  X,
-  Pencil,
   Play,
   CheckCircle,
-  FileText,
-  KeyRound,
-  Ticket,
-  Unlock,
-  Globe,
-  Download,
-  Monitor,
   Sparkles,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Icon options for the agent
@@ -142,7 +129,7 @@ export function WizardFloatBuilder({
 
   // Determine if steps are complete
   const isSetupComplete = Boolean(config.name && config.description);
-  const steps: WizardStep[] = ["setup", "knowledge", "actions", "build"];
+  const steps: WizardStep[] = ["setup", "knowledge", "actions"];
   const stepIndex = steps.indexOf(activeStep);
 
   const goToNextStep = () => {
@@ -288,13 +275,12 @@ export function WizardFloatBuilder({
           <div className="py-4 px-6">
             <div className="flex items-center gap-3">
               {[
-                { id: "setup", label: "Setup", num: 1 },
-                { id: "knowledge", label: "Knowledge", num: 2 },
-                { id: "actions", label: "Actions", num: 3 },
-                { id: "build", label: "Build", num: 4 },
+                { id: "setup", label: "Configure", num: 1 },
+                { id: "knowledge", label: "Test", num: 2 },
+                { id: "actions", label: "Enable", num: 3 },
               ].map((step) => {
                 const isActive = activeStep === step.id;
-                const isPast = stepIndex > ["setup", "knowledge", "actions", "build"].indexOf(step.id);
+                const isPast = stepIndex > ["setup", "knowledge", "actions"].indexOf(step.id);
                 const isClickable = step.id === "setup" || isSetupComplete;
 
                 return (
@@ -308,8 +294,8 @@ export function WizardFloatBuilder({
                         ? "bg-blue-50 text-foreground border border-blue-100"
                         : isPast
                         ? "bg-white border border-slate-200 text-foreground"
-                        : "bg-white border border-slate-200 text-muted-foreground/60",
-                      !isClickable && "opacity-50 cursor-not-allowed"
+                        : "bg-white border border-slate-200 text-muted-foreground",
+                      !isClickable && "opacity-60 cursor-not-allowed"
                     )}
                   >
                     <span>{step.num}.</span>
@@ -323,8 +309,9 @@ export function WizardFloatBuilder({
           {/* Form content */}
           <div className="flex-1 overflow-y-auto py-6 pb-24">
             <div className="max-w-[520px] mx-auto px-6">
+              {/* Configure step - all configuration in one */}
               {activeStep === "setup" && (
-                <SetupStep
+                <ConfigureStep
                   config={config}
                   setConfig={setConfig}
                   showIconPicker={showIconPicker}
@@ -333,25 +320,22 @@ export function WizardFloatBuilder({
                   currentColor={currentColor}
                 />
               )}
+              {/* Test step */}
               {activeStep === "knowledge" && (
-                <KnowledgeStep
+                <TestStep
                   config={config}
-                  setConfig={setConfig}
-                />
-              )}
-              {activeStep === "actions" && (
-                <ActionsStep
-                  config={config}
-                  setConfig={setConfig}
-                />
-              )}
-              {activeStep === "build" && (
-                <BuildStep
-                  config={config}
-                  setConfig={setConfig}
+                  currentColor={currentColor}
+                  CurrentIcon={CurrentIcon}
                   onTest={() => {
                     navigate("/agents/test", { state: { config } });
                   }}
+                />
+              )}
+              {/* Enable step */}
+              {activeStep === "actions" && (
+                <EnableStep
+                  config={config}
+                  onPublish={() => onPublish(config)}
                 />
               )}
             </div>
@@ -365,10 +349,10 @@ export function WizardFloatBuilder({
                 <Button variant="outline" onClick={goToPrevStep}>
                   {activeStep === "setup" ? "Cancel" : "Back"}
                 </Button>
-                {activeStep === "build" ? (
+                {activeStep === "actions" ? (
                   <Button onClick={() => onPublish(config)} className="gap-2">
                     <CheckCircle className="size-4" />
-                    Publish Agent
+                    Enable Agent
                   </Button>
                 ) : (
                   <Button onClick={goToNextStep} disabled={activeStep === "setup" && !isSetupComplete}>
@@ -379,8 +363,8 @@ export function WizardFloatBuilder({
             </div>
           </div>
 
-          {/* Floating AI Chat - inside left panel, contextual to current step */}
-          <div className="absolute bottom-20 right-4 z-40 w-80">
+          {/* Floating AI Chat - inside left panel, centered, contextual to current step */}
+          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-40 w-96">
             {/* Chat messages (shown above input when there are messages) */}
             {floatChatMessages.length > 1 && (
               <div className="bg-white rounded-2xl shadow-lg border mb-3 max-h-64 overflow-hidden flex flex-col">
@@ -640,8 +624,8 @@ export function WizardFloatBuilder({
   );
 }
 
-// Setup Step - Name, Description, Instructions
-function SetupStep({
+// Configure Step - Name, Description, Instructions (all config in one)
+function ConfigureStep({
   config,
   setConfig,
   showIconPicker,
@@ -756,647 +740,112 @@ function SetupStep({
   );
 }
 
-// Knowledge Step
-function KnowledgeStep({
+// Test Step - Test the agent before enabling
+function TestStep({
   config,
-  setConfig,
-}: {
-  config: AgentConfig;
-  setConfig: React.Dispatch<React.SetStateAction<AgentConfig>>;
-}) {
-  const [useAllKnowledge, setUseAllKnowledge] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const availableFiles = [
-    { id: "file-1", name: "Employee Handbook 2024.pdf", size: "2.4 MB" },
-    { id: "file-2", name: "IT Policies.docx", size: "156 KB" },
-    { id: "file-3", name: "Benefits Guide.pdf", size: "1.8 MB" },
-    { id: "file-4", name: "Onboarding Checklist.pdf", size: "89 KB" },
-    { id: "file-5", name: "Security Guidelines.docx", size: "234 KB" },
-  ];
-
-  const addSource = (sourceId: string) => {
-    if (!config.knowledgeSources.includes(sourceId)) {
-      setConfig((prev) => ({
-        ...prev,
-        knowledgeSources: [...prev.knowledgeSources, sourceId],
-      }));
-    }
-    setSearchQuery("");
-  };
-
-  const removeSource = (sourceId: string) => {
-    setConfig((prev) => ({
-      ...prev,
-      knowledgeSources: prev.knowledgeSources.filter((s) => s !== sourceId),
-    }));
-  };
-
-  const filteredFiles = availableFiles.filter(
-    (f) =>
-      !config.knowledgeSources.includes(f.id) &&
-      f.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const selectedFiles = availableFiles.filter((f) =>
-    config.knowledgeSources.includes(f.id)
-  );
-
-  return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="text-sm font-semibold mb-1">Knowledge sources</h2>
-        <p className="text-sm text-muted-foreground">
-          Choose which sources to reference. If left blank, the agent only uses its pre-trained data.
-        </p>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <Switch
-          checked={useAllKnowledge}
-          onCheckedChange={setUseAllKnowledge}
-        />
-        <span className="text-sm">Use all company knowledge</span>
-      </div>
-
-      <div className="relative">
-        <div className="border rounded-lg px-4 py-3 bg-muted/30">
-          <Input
-            type="text"
-            placeholder="Search to add files, folders, and more"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="border-0 bg-transparent p-0 h-auto focus-visible:ring-0 placeholder:text-muted-foreground/60"
-          />
-        </div>
-
-        {searchQuery && filteredFiles.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 max-h-[200px] overflow-y-auto">
-            <div className="p-2">
-              {filteredFiles.map((file) => (
-                <button
-                  key={file.id}
-                  onClick={() => addSource(file.id)}
-                  className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-muted text-left"
-                >
-                  <FileText className="size-4 text-muted-foreground" />
-                  <div className="flex-1">
-                    <div className="text-sm">{file.name}</div>
-                    <div className="text-xs text-muted-foreground">{file.size}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {searchQuery && filteredFiles.length === 0 && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 p-4 text-center">
-            <p className="text-sm text-muted-foreground">No matching files found</p>
-          </div>
-        )}
-      </div>
-
-      <Button variant="outline" size="sm" className="gap-2">
-        <Plus className="size-4" />
-        Add data source
-      </Button>
-
-      {selectedFiles.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Additional sources ({selectedFiles.length})
-          </h3>
-          {selectedFiles.map((file) => (
-            <div
-              key={file.id}
-              className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border"
-            >
-              <FileText className="size-4 text-muted-foreground" />
-              <div className="flex-1">
-                <div className="text-sm font-medium">{file.name}</div>
-                <div className="text-xs text-muted-foreground">{file.size}</div>
-              </div>
-              <button
-                onClick={() => removeSource(file.id)}
-                className="p-1 hover:bg-muted rounded"
-              >
-                <X className="size-4 text-muted-foreground" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Actions Step
-interface ActionItem {
-  id: string;
-  name: string;
-  description: string;
-  icon: LucideIcon;
-  comingSoon?: boolean;
-}
-
-interface ActionCategory {
-  name: string;
-  actions: ActionItem[];
-}
-
-const ACTION_CATEGORIES: ActionCategory[] = [
-  {
-    name: "ServiceNow Actions",
-    actions: [
-      { id: "password_reset", name: "Password Reset", description: "Reset user password via ServiceNow", icon: KeyRound },
-      { id: "ticket_create", name: "Create Ticket", description: "Open a new support ticket in ServiceNow", icon: Ticket },
-      { id: "account_unlock", name: "Unlock Account", description: "Unlock locked AD account via ServiceNow", icon: Unlock },
-    ],
-  },
-  {
-    name: "Access Request Actions",
-    actions: [
-      { id: "vpn_access", name: "VPN Access Request", description: "Request VPN access approval", icon: Globe },
-      { id: "software_request", name: "Software Request", description: "Request software installation approval", icon: Download },
-      { id: "hardware_request", name: "Hardware Request", description: "Request new hardware procurement", icon: Monitor },
-    ],
-  },
-  {
-    name: "Communication Actions",
-    actions: [
-      { id: "send_email", name: "Send Email", description: "Send an email notification to user", icon: FileText },
-      { id: "slack_message", name: "Send Slack Message", description: "Send a direct message in Slack to the user", icon: FileText, comingSoon: true },
-      { id: "slack_channel", name: "Send Slack to Channel", description: "Post a message to a specified Slack channel", icon: FileText, comingSoon: true },
-    ],
-  },
-  {
-    name: "Custom Actions",
-    actions: [
-      { id: "webhook", name: "Webhook", description: "Trigger a custom webhook endpoint", icon: Globe, comingSoon: true },
-      { id: "api_call", name: "API Call", description: "Make a custom API request", icon: Globe, comingSoon: true },
-    ],
-  },
-];
-
-function ActionsStep({
-  config,
-  setConfig,
-}: {
-  config: AgentConfig;
-  setConfig: React.Dispatch<React.SetStateAction<AgentConfig>>;
-}) {
-  const [showModal, setShowModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const addAction = (actionId: string) => {
-    if (!config.actions.includes(actionId)) {
-      setConfig((prev) => ({
-        ...prev,
-        actions: [...prev.actions, actionId],
-      }));
-    }
-  };
-
-  const removeAction = (actionId: string) => {
-    setConfig((prev) => ({
-      ...prev,
-      actions: prev.actions.filter((a) => a !== actionId),
-    }));
-  };
-
-  const getActionById = (id: string): ActionItem | undefined => {
-    for (const category of ACTION_CATEGORIES) {
-      const action = category.actions.find((a) => a.id === id);
-      if (action) return action;
-    }
-    return undefined;
-  };
-
-  const filteredCategories = ACTION_CATEGORIES.map((category) => ({
-    ...category,
-    actions: category.actions.filter(
-      (action) =>
-        !config.actions.includes(action.id) &&
-        (action.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          action.description.toLowerCase().includes(searchQuery.toLowerCase()))
-    ),
-  })).filter((category) => category.actions.length > 0);
-
-  const selectedActions = config.actions
-    .map((id) => getActionById(id))
-    .filter((a): a is ActionItem => a !== undefined);
-
-  return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="text-sm font-semibold mb-1">Actions</h2>
-        <p className="text-sm text-muted-foreground">
-          Add actions this agent can perform. Actions are workflows that handle specific tasks.
-        </p>
-      </div>
-
-      <Button variant="outline" onClick={() => setShowModal(true)} className="gap-2">
-        <Plus className="size-4" />
-        Add action
-      </Button>
-
-      {selectedActions.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Added actions ({selectedActions.length})
-          </h3>
-          {selectedActions.map((action) => {
-            const ActionIcon = action.icon;
-            return (
-              <div
-                key={action.id}
-                className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border"
-              >
-                <ActionIcon className="size-5 text-muted-foreground" />
-                <div className="flex-1">
-                  <div className="text-sm font-medium">{action.name}</div>
-                  <div className="text-xs text-muted-foreground">{action.description}</div>
-                </div>
-                <button
-                  onClick={() => removeAction(action.id)}
-                  className="p-1 hover:bg-muted rounded"
-                >
-                  <X className="size-4 text-muted-foreground" />
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-lg font-semibold">Add action</h2>
-              <button
-                onClick={() => {
-                  setShowModal(false);
-                  setSearchQuery("");
-                }}
-                className="p-1 hover:bg-muted rounded"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
-
-            <div className="p-4 border-b">
-              <div className="relative">
-                <Input
-                  type="text"
-                  placeholder="Search actions..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                  autoFocus
-                />
-                <svg
-                  className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="m21 21-4.35-4.35" />
-                </svg>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4">
-              {filteredCategories.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  {searchQuery ? "No actions match your search" : "All actions have been added"}
-                </p>
-              ) : (
-                <div className="space-y-6">
-                  {filteredCategories.map((category) => (
-                    <div key={category.name}>
-                      <h3 className="text-sm font-semibold text-foreground mb-3">
-                        {category.name}
-                      </h3>
-                      <div className="space-y-1">
-                        {category.actions.map((action) => {
-                          const ActionIcon = action.icon;
-                          return (
-                            <button
-                              key={action.id}
-                              onClick={() => {
-                                if (!action.comingSoon) {
-                                  addAction(action.id);
-                                }
-                              }}
-                              disabled={action.comingSoon}
-                              className={cn(
-                                "w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors",
-                                action.comingSoon
-                                  ? "opacity-50 cursor-not-allowed"
-                                  : "hover:bg-muted"
-                              )}
-                            >
-                              <ActionIcon className="size-5 text-muted-foreground mt-0.5" />
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium">{action.name}</span>
-                                  {action.comingSoon && (
-                                    <span className="text-[10px] font-medium text-orange-500 uppercase tracking-wide">
-                                      Coming Soon
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-sm text-muted-foreground">
-                                  {action.description}
-                                </p>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Interaction style options
-const INTERACTION_STYLE_OPTIONS = [
-  "Conversational and friendly",
-  "Professional",
-  "Concise",
-  "Comical",
-  "Like Spock",
-  "Shakespearean",
-];
-
-// Build Step
-function BuildStep({
-  config,
-  setConfig,
+  currentColor,
+  CurrentIcon,
   onTest,
 }: {
   config: AgentConfig;
-  setConfig: React.Dispatch<React.SetStateAction<AgentConfig>>;
+  currentColor: { id: string; bg: string; text: string };
+  CurrentIcon: React.ElementType;
   onTest: () => void;
 }) {
-  const [editingStyle, setEditingStyle] = useState(false);
-  const [customStyle, setCustomStyle] = useState("");
-  const [editingStarterIndex, setEditingStarterIndex] = useState<number | null>(null);
-
-  const updateConversationStarter = (index: number, value: string) => {
-    setConfig((prev) => {
-      const newStarters = [...prev.conversationStarters];
-      newStarters[index] = value;
-      return { ...prev, conversationStarters: newStarters };
-    });
-  };
-
-  const addConversationStarter = () => {
-    setConfig((prev) => ({
-      ...prev,
-      conversationStarters: [...prev.conversationStarters, ""],
-    }));
-  };
-
-  const removeConversationStarter = (index: number) => {
-    setConfig((prev) => ({
-      ...prev,
-      conversationStarters: prev.conversationStarters.filter((_, i) => i !== index),
-    }));
-  };
-
-  const updateGuardrail = (index: number, value: string) => {
-    setConfig((prev) => {
-      const newGuardrails = [...prev.guardrails];
-      newGuardrails[index] = value;
-      return { ...prev, guardrails: newGuardrails };
-    });
-  };
-
-  const addGuardrail = () => {
-    setConfig((prev) => ({
-      ...prev,
-      guardrails: [...prev.guardrails, ""],
-    }));
-  };
-
-  const removeGuardrail = (index: number) => {
-    setConfig((prev) => ({
-      ...prev,
-      guardrails: prev.guardrails.filter((_, i) => i !== index),
-    }));
-  };
-
   return (
-    <div className="space-y-8">
-      {/* Summary */}
-      <div className="p-4 bg-muted/50 rounded-lg">
-        <h3 className="font-medium mb-3">Agent Summary</h3>
-        <dl className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">Name</dt>
-            <dd>{config.name}</dd>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold mb-1">Test your agent</h2>
+        <p className="text-sm text-muted-foreground">
+          Try out your agent in a test conversation before enabling it for users.
+        </p>
+      </div>
+
+      {/* Agent preview card */}
+      <div className="p-6 border rounded-xl bg-muted/30">
+        <div className="flex items-start gap-4">
+          <div className={cn("size-12 rounded-xl flex items-center justify-center", currentColor.bg)}>
+            <CurrentIcon className={cn("size-6", currentColor.text)} />
           </div>
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">Knowledge Sources</dt>
-            <dd>{config.knowledgeSources.length || "None"}</dd>
+          <div className="flex-1">
+            <h3 className="font-semibold text-lg">{config.name}</h3>
+            <p className="text-sm text-muted-foreground mt-1">{config.description || "No description"}</p>
           </div>
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">Actions</dt>
-            <dd>{config.actions.length || "None"}</dd>
-          </div>
-        </dl>
-      </div>
-
-      {/* Interaction Style */}
-      <div className="space-y-3">
-        <label className="text-sm font-medium text-foreground">Interaction Style</label>
-        {editingStyle ? (
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-2">
-              {INTERACTION_STYLE_OPTIONS.map((style) => (
-                <button
-                  key={style}
-                  onClick={() => {
-                    setConfig((prev) => ({ ...prev, interactionStyle: style }));
-                    setEditingStyle(false);
-                  }}
-                  className="px-3 py-1.5 bg-muted hover:bg-primary hover:text-primary-foreground rounded-full text-sm transition-colors"
-                >
-                  {style}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <Input
-                type="text"
-                placeholder="Or type custom style..."
-                value={customStyle}
-                onChange={(e) => setCustomStyle(e.target.value)}
-                className="flex-1"
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  if (customStyle) {
-                    setConfig((prev) => ({ ...prev, interactionStyle: customStyle }));
-                    setEditingStyle(false);
-                    setCustomStyle("");
-                  }
-                }}
-              >
-                Apply
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setEditingStyle(true)}
-            className="w-full px-3 py-2.5 bg-muted rounded-lg text-sm text-left flex items-center justify-between hover:bg-muted/80"
-          >
-            <span>{config.interactionStyle}</span>
-            <Edit2 className="size-4 text-muted-foreground" />
-          </button>
-        )}
-      </div>
-
-      {/* Context Switching Toggle */}
-      <div className="flex items-center justify-between py-3 border-b">
-        <div>
-          <span className="text-sm font-medium">Context Switching</span>
-          <p className="text-xs text-muted-foreground">Allow the agent to handle topic changes mid-conversation</p>
-        </div>
-        <Switch
-          checked={config.contextSwitching}
-          onCheckedChange={(checked) => setConfig((prev) => ({ ...prev, contextSwitching: checked }))}
-        />
-      </div>
-
-      {/* Ticket Creation Toggle */}
-      <div className="flex items-center justify-between py-3 border-b">
-        <div>
-          <span className="text-sm font-medium">Ticket Creation</span>
-          <p className="text-xs text-muted-foreground">Allow the agent to create support tickets</p>
-        </div>
-        <Switch
-          checked={config.ticketCreation}
-          onCheckedChange={(checked) => setConfig((prev) => ({ ...prev, ticketCreation: checked }))}
-        />
-      </div>
-
-      {/* Conversation Starters */}
-      <div className="space-y-3">
-        <div>
-          <label className="text-sm font-semibold text-foreground">Conversation starters</label>
-          <p className="text-sm text-muted-foreground">
-            Add up to 10 short suggested prompts to help users get started with this agent.
-          </p>
-        </div>
-        <div className="space-y-1">
-          {config.conversationStarters.filter(s => s.trim()).map((starter, index) => (
-            <div key={index} className="flex items-center justify-between py-2 group">
-              {editingStarterIndex === index ? (
-                <Input
-                  value={starter}
-                  onChange={(e) => updateConversationStarter(index, e.target.value)}
-                  onBlur={() => setEditingStarterIndex(null)}
-                  onKeyDown={(e) => e.key === "Enter" && setEditingStarterIndex(null)}
-                  autoFocus
-                  className="flex-1 mr-2"
-                />
-              ) : (
-                <span className="text-sm">{starter}</span>
-              )}
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={() => setEditingStarterIndex(index)}
-                  className="p-1.5 hover:bg-muted rounded"
-                >
-                  <Pencil className="size-4 text-muted-foreground" />
-                </button>
-                <button
-                  onClick={() => removeConversationStarter(index)}
-                  className="p-1.5 hover:bg-muted rounded"
-                >
-                  <Trash2 className="size-4 text-muted-foreground" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={addConversationStarter}
-          className="gap-1"
-        >
-          <Plus className="size-4" />
-          Add
-        </Button>
-      </div>
-
-      {/* Guardrails */}
-      <div className="space-y-3">
-        <div className="flex items-start justify-between">
-          <div>
-            <label className="text-sm font-medium text-foreground">Guardrails</label>
-            <p className="text-xs text-muted-foreground">Topics or requests the agent should NOT handle</p>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={addGuardrail}
-            className="gap-1 text-muted-foreground hover:text-foreground"
-          >
-            <Plus className="size-4" />
-            Add
-          </Button>
-        </div>
-        <div className="space-y-2">
-          {config.guardrails.map((guardrail, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <Input
-                value={guardrail}
-                onChange={(e) => updateGuardrail(index, e.target.value)}
-                placeholder="e.g., HR policy questions"
-                className="flex-1"
-              />
-              <button
-                onClick={() => removeGuardrail(index)}
-                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Trash2 className="size-4" />
-              </button>
-            </div>
-          ))}
         </div>
       </div>
 
-      {/* Test Section */}
+      {/* Test CTA */}
       <div className="p-5 bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-lg">
         <div className="flex items-start gap-4">
           <div className="size-12 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
             <Play className="size-6 text-violet-600" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-base mb-1">Test your agent</h3>
+            <h3 className="font-semibold text-base mb-1">Open test conversation</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Open a test conversation to see how your agent responds before publishing it to users.
+              See how your agent responds to real questions before going live.
             </p>
             <Button className="gap-2" onClick={onTest}>
               <Play className="size-4" />
               Test Agent
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Enable Step - Final step to enable the agent
+function EnableStep({
+  config,
+  onPublish,
+}: {
+  config: AgentConfig;
+  onPublish: () => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold mb-1">Enable your agent</h2>
+        <p className="text-sm text-muted-foreground">
+          Review your configuration and enable the agent for your team.
+        </p>
+      </div>
+
+      {/* Summary */}
+      <div className="p-5 border rounded-xl bg-muted/30 space-y-4">
+        <h3 className="font-medium">Configuration Summary</h3>
+        <dl className="space-y-3 text-sm">
+          <div className="flex justify-between">
+            <dt className="text-muted-foreground">Name</dt>
+            <dd className="font-medium">{config.name}</dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="text-muted-foreground">Description</dt>
+            <dd className="font-medium text-right max-w-[60%] truncate">{config.description || "None"}</dd>
+          </div>
+          <div className="flex justify-between">
+            <dt className="text-muted-foreground">Instructions</dt>
+            <dd className="font-medium">{config.instructions ? "Configured" : "None"}</dd>
+          </div>
+        </dl>
+      </div>
+
+      {/* Enable CTA */}
+      <div className="p-5 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-lg">
+        <div className="flex items-start gap-4">
+          <div className="size-12 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+            <CheckCircle className="size-6 text-emerald-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-base mb-1">Ready to go live</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Your agent is configured and tested. Enable it to make it available to your team.
+            </p>
+            <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700" onClick={onPublish}>
+              <CheckCircle className="size-4" />
+              Enable Agent
             </Button>
           </div>
         </div>
@@ -1541,11 +990,9 @@ function getStepPlaceholder(step: WizardStep): string {
     case "setup":
       return "Describe your agent idea...";
     case "knowledge":
-      return "Ask about knowledge sources...";
+      return "Ask about testing your agent...";
     case "actions":
-      return "What actions should this agent perform?";
-    case "build":
-      return "Adjust style, starters, or guardrails...";
+      return "Ready to enable?";
     default:
       return "Ask AI to help...";
   }
