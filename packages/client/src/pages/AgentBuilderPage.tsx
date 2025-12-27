@@ -1501,46 +1501,59 @@ export default function AgentBuilderPage() {
     });
   };
 
-  // Mode switcher component
-  const ModeSwitcher = () => (
-    <div className="fixed bottom-4 left-4 z-50 flex gap-2">
-      <Button
-        variant={builderMode === "chat" ? "default" : "outline"}
-        size="sm"
-        onClick={() => setBuilderMode("chat")}
-        className={cn("gap-2", builderMode !== "chat" && "bg-white shadow-lg")}
-      >
-        <MessageSquare className="size-4" />
-        Chat
-      </Button>
-      <Button
-        variant={builderMode === "wizard" ? "default" : "outline"}
-        size="sm"
-        onClick={() => setBuilderMode("wizard")}
-        className={cn("gap-2", builderMode !== "wizard" && "bg-white shadow-lg")}
-      >
-        <FileText className="size-4" />
-        Wizard
-      </Button>
-      <Button
-        variant={builderMode === "wizard-float" ? "default" : "outline"}
-        size="sm"
-        onClick={() => setBuilderMode("wizard-float")}
-        className={cn("gap-2", builderMode !== "wizard-float" && "bg-white shadow-lg")}
-      >
-        <Sparkles className="size-4" />
-        Wizard + AI
-      </Button>
+  // Mode switcher bar - fixed at top of page for all variations
+  const ModeSwitcherBar = () => (
+    <div className="flex items-center justify-center gap-3 px-4 py-2 bg-white border-b">
+      <span className="text-xs text-muted-foreground">Builder variation:</span>
+      <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+        <button
+          onClick={() => setBuilderMode("chat")}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+            builderMode === "chat"
+              ? "bg-white text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <MessageSquare className="size-3.5" />
+          Chat
+        </button>
+        <button
+          onClick={() => setBuilderMode("wizard")}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+            builderMode === "wizard"
+              ? "bg-white text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <FileText className="size-3.5" />
+          Wizard
+        </button>
+        <button
+          onClick={() => setBuilderMode("wizard-float")}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+            builderMode === "wizard-float"
+              ? "bg-white text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Sparkles className="size-3.5" />
+          Wizard + AI
+        </button>
+      </div>
     </div>
   );
 
   // If wizard mode is selected, render the WizardAgentBuilder
   if (builderMode === "wizard") {
     return (
-      <>
-        <ModeSwitcher />
-        <WizardAgentBuilder
-          initialConfig={{
+      <div className="flex flex-col h-screen">
+        <ModeSwitcherBar />
+        <div className="flex-1 overflow-hidden">
+          <WizardAgentBuilder
+            initialConfig={{
             name: config.name,
             description: config.description,
             role: config.role,
@@ -1564,17 +1577,19 @@ export default function AgentBuilderPage() {
             setShowPublishModal(true);
           }}
           isEditing={isEditing}
-        />
-      </>
+          />
+        </div>
+      </div>
     );
   }
 
   // If wizard-float mode is selected, render the WizardFloatBuilder
   if (builderMode === "wizard-float") {
     return (
-      <>
-        <ModeSwitcher />
-        <WizardFloatBuilder
+      <div className="flex flex-col h-screen">
+        <ModeSwitcherBar />
+        <div className="flex-1 overflow-hidden">
+          <WizardFloatBuilder
           initialConfig={{
             name: config.name,
             description: config.description,
@@ -1599,14 +1614,15 @@ export default function AgentBuilderPage() {
             setShowPublishModal(true);
           }}
           isEditing={isEditing}
-        />
-      </>
+          />
+        </div>
+      </div>
     );
   }
 
   return (
     <div className="flex flex-col h-screen bg-muted/50">
-      <ModeSwitcher />
+      <ModeSwitcherBar />
 
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-white border-b">
