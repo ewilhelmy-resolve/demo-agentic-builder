@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { WizardAgentBuilder } from "@/components/agents/WizardAgentBuilder";
 import { WizardFloatBuilder } from "@/components/agents/WizardFloatBuilder";
+import { CanvasBuilder } from "@/components/agents/CanvasBuilder";
 
 interface Message {
   id: string;
@@ -128,16 +129,19 @@ const AVAILABLE_KNOWLEDGE_SOURCES = [
   { id: "gdrive-hr", name: "Google Drive - HR Folder", description: "HR shared drive", type: "connection", tags: ["hr", "gdrive"] },
 ];
 
+// Mock current user ID (would come from auth context in real app)
+const CURRENT_USER_ID = "user-1";
+
 // Mock available workflows in the org (1:1 with agents)
 const AVAILABLE_WORKFLOWS = [
-  { id: "password-reset", name: "Password Reset", description: "Reset user passwords in AD", category: "IT", linkedAgentId: "3", linkedAgentName: "Password Reset Bot" },
-  { id: "access-request", name: "Access Request", description: "Request system access", category: "IT", linkedAgentId: null, linkedAgentName: null },
-  { id: "new-hire-setup", name: "New Hire Setup", description: "Provision accounts for new employees", category: "HR", linkedAgentId: null, linkedAgentName: null },
-  { id: "offboarding", name: "Offboarding", description: "Revoke access for departing employees", category: "HR", linkedAgentId: null, linkedAgentName: null },
-  { id: "software-install", name: "Software Installation", description: "Request and install approved software", category: "IT", linkedAgentId: null, linkedAgentName: null },
-  { id: "vpn-setup", name: "VPN Setup", description: "Configure VPN access for remote work", category: "IT", linkedAgentId: null, linkedAgentName: null },
-  { id: "expense-submit", name: "Expense Submission", description: "Submit and track expense reports", category: "Finance", linkedAgentId: null, linkedAgentName: null },
-  { id: "pto-request", name: "PTO Request", description: "Submit time off requests", category: "HR", linkedAgentId: null, linkedAgentName: null },
+  { id: "password-reset", name: "Password Reset", description: "Reset user passwords in AD", category: "IT", linkedAgentId: "3", linkedAgentName: "Password Reset Bot", linkedAgentOwnerId: "user-2", linkedAgentOwnerName: "John Smith", linkedAgentOwnerEmail: "john.smith@company.com" },
+  { id: "access-request", name: "Access Request", description: "Request system access", category: "IT", linkedAgentId: null, linkedAgentName: null, linkedAgentOwnerId: null, linkedAgentOwnerName: null, linkedAgentOwnerEmail: null },
+  { id: "new-hire-setup", name: "New Hire Setup", description: "Provision accounts for new employees", category: "HR", linkedAgentId: null, linkedAgentName: null, linkedAgentOwnerId: null, linkedAgentOwnerName: null, linkedAgentOwnerEmail: null },
+  { id: "offboarding", name: "Offboarding", description: "Revoke access for departing employees", category: "HR", linkedAgentId: "7", linkedAgentName: "HR Assistant", linkedAgentOwnerId: "user-1", linkedAgentOwnerName: "You", linkedAgentOwnerEmail: null },
+  { id: "software-install", name: "Software Installation", description: "Request and install approved software", category: "IT", linkedAgentId: null, linkedAgentName: null, linkedAgentOwnerId: null, linkedAgentOwnerName: null, linkedAgentOwnerEmail: null },
+  { id: "vpn-setup", name: "VPN Setup", description: "Configure VPN access for remote work", category: "IT", linkedAgentId: null, linkedAgentName: null, linkedAgentOwnerId: null, linkedAgentOwnerName: null, linkedAgentOwnerEmail: null },
+  { id: "expense-submit", name: "Expense Submission", description: "Submit and track expense reports", category: "Finance", linkedAgentId: null, linkedAgentName: null, linkedAgentOwnerId: null, linkedAgentOwnerName: null, linkedAgentOwnerEmail: null },
+  { id: "pto-request", name: "PTO Request", description: "Submit time off requests", category: "HR", linkedAgentId: null, linkedAgentName: null, linkedAgentOwnerId: null, linkedAgentOwnerName: null, linkedAgentOwnerEmail: null },
 ];
 
 // Icon picker options
@@ -350,7 +354,7 @@ export default function AgentBuilderPage() {
   const [newWorkflowDescription, setNewWorkflowDescription] = useState("");
 
   // Builder mode toggle (for demo purposes)
-  const [builderMode, setBuilderMode] = useState<"chat" | "wizard" | "wizard-float">("chat");
+  const [builderMode, setBuilderMode] = useState<"chat" | "wizard" | "wizard-float" | "canvas">("chat");
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -1542,6 +1546,18 @@ export default function AgentBuilderPage() {
           <Sparkles className="size-3.5" />
           Wizard + AI
         </button>
+        <button
+          onClick={() => setBuilderMode("canvas")}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+            builderMode === "canvas"
+              ? "bg-white text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Workflow className="size-3.5" />
+          Canvas
+        </button>
       </div>
     </div>
   );
@@ -1614,6 +1630,33 @@ export default function AgentBuilderPage() {
             setShowPublishModal(true);
           }}
           isEditing={isEditing}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // If canvas mode is selected, render the CanvasBuilder
+  if (builderMode === "canvas") {
+    return (
+      <div className="flex flex-col h-screen">
+        <ModeSwitcherBar />
+        <div className="flex-1 overflow-hidden">
+          <CanvasBuilder
+            initialConfig={{
+              name: config.name,
+              description: config.description,
+            }}
+            onBack={handleBack}
+            onPublish={(canvasConfig) => {
+              setConfig((prev) => ({
+                ...prev,
+                name: canvasConfig.name,
+                description: canvasConfig.description,
+              }));
+              setShowPublishModal(true);
+            }}
+            isEditing={isEditing}
           />
         </div>
       </div>
@@ -2638,19 +2681,23 @@ Your job is complete when:
                               );
                             })
                             .map((workflow) => {
-                              const isLinkedElsewhere = workflow.linkedAgentId && workflow.linkedAgentId !== agentId;
+                              const isLinkedElsewhere = !!(workflow.linkedAgentId && workflow.linkedAgentId !== agentId);
+                              const isOwnedByCurrentUser = workflow.linkedAgentOwnerId === CURRENT_USER_ID;
+                              const canUnlink = isLinkedElsewhere && isOwnedByCurrentUser;
+                              const isBlockedByOwner = isLinkedElsewhere && !isOwnedByCurrentUser;
                               const isAlreadyAdded = config.workflows.includes(workflow.name);
 
                               return (
                                 <button
                                   key={workflow.id}
                                   className={cn(
-                                    "w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors",
-                                    isAlreadyAdded && "opacity-50"
+                                    "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors",
+                                    isAlreadyAdded && "opacity-50",
+                                    isBlockedByOwner ? "opacity-60 cursor-not-allowed" : "hover:bg-muted/50"
                                   )}
                                   onClick={() => {
-                                    if (isAlreadyAdded) return;
-                                    if (isLinkedElsewhere) {
+                                    if (isAlreadyAdded || isBlockedByOwner) return;
+                                    if (canUnlink) {
                                       setWorkflowToUnlink({
                                         id: workflow.id,
                                         name: workflow.name,
@@ -2665,7 +2712,7 @@ Your job is complete when:
                                       setWorkflowSearchQuery("");
                                     }
                                   }}
-                                  disabled={isAlreadyAdded}
+                                  disabled={isAlreadyAdded || isBlockedByOwner}
                                 >
                                   <div className="size-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                                     <Workflow className="size-5 text-muted-foreground" />
@@ -2674,11 +2721,23 @@ Your job is complete when:
                                     <p className="text-sm font-medium">{workflow.name}</p>
                                     <p className="text-xs text-muted-foreground">
                                       {workflow.category}
-                                      {isLinkedElsewhere && (
-                                        <span className="text-amber-600 ml-2">• Linked to {workflow.linkedAgentName}</span>
+                                      {isBlockedByOwner && (
+                                        <span className="text-red-500 ml-2">• Linked to {workflow.linkedAgentName}</span>
+                                      )}
+                                      {canUnlink && (
+                                        <span className="text-amber-600 ml-2">• Linked to {workflow.linkedAgentName} (your agent)</span>
                                       )}
                                     </p>
                                   </div>
+                                  {isBlockedByOwner && workflow.linkedAgentOwnerEmail && (
+                                    <a
+                                      href={`mailto:${workflow.linkedAgentOwnerEmail}?subject=Request to use ${workflow.name} workflow&body=Hi ${workflow.linkedAgentOwnerName},%0D%0A%0D%0AI would like to use the "${workflow.name}" workflow which is currently linked to your agent "${workflow.linkedAgentName}".%0D%0A%0D%0ACould you please unlink it so I can use it for my agent?%0D%0A%0D%0AThank you!`}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex-shrink-0"
+                                    >
+                                      Contact
+                                    </a>
+                                  )}
                                 </button>
                               );
                             })}
@@ -2785,6 +2844,35 @@ Your job is complete when:
                     </div>
                   )}
                 </div>
+
+                {/* Sticky footer with Test and Publish */}
+                <div className="sticky bottom-0 pt-4 pb-2 bg-white border-t mt-8">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      {!config.name && "Add a name to continue"}
+                      {config.name && !config.instructions && !config.description && "Add instructions or description"}
+                      {config.name && (config.instructions || config.description) && "Ready to test and publish"}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        className="gap-2"
+                        onClick={() => setShowTestModal(true)}
+                        disabled={!config.name || (!config.instructions && !config.description)}
+                      >
+                        <Play className="size-4" />
+                        Test
+                      </Button>
+                      <Button
+                        className="gap-2"
+                        onClick={handlePublish}
+                        disabled={!config.name || (!config.instructions && !config.description)}
+                      >
+                        {isEditing ? "Save Changes" : "Publish"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -2794,7 +2882,7 @@ Your job is complete when:
         <div className="w-[400px] flex flex-col bg-white rounded-xl">
           <div className="p-4 border-b flex items-center justify-between">
             <h2 className="font-medium">Preview</h2>
-            {step === "done" && (
+            {(step === "done" || (config.name && (config.instructions || config.description))) && (
               <Button
                 variant="outline"
                 size="sm"

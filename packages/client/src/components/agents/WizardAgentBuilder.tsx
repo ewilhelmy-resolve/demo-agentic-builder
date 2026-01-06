@@ -420,8 +420,20 @@ export function WizardAgentBuilder({
           ) : (
             <>
               {/* Static Preview Header */}
-              <div className="p-4 border-b">
+              <div className="p-4 border-b flex items-center justify-between">
                 <h2 className="font-medium">Preview</h2>
+                {/* Show Test button when enough config is done */}
+                {isSetupComplete && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => setActiveStep("publish")}
+                  >
+                    <Send className="size-3.5" />
+                    Test
+                  </Button>
+                )}
               </div>
 
               {/* Static Preview Content */}
@@ -445,12 +457,23 @@ export function WizardAgentBuilder({
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Try asking</p>
                       <div className="space-y-1.5">
                         {config.conversationStarters.filter(s => s.trim()).slice(0, 4).map((starter, index) => (
-                          <div
+                          <button
                             key={index}
-                            className="w-full text-left px-3 py-2 text-sm border rounded-lg text-muted-foreground truncate"
+                            onClick={() => {
+                              setActiveStep("publish");
+                              // Slight delay to let state update, then send the starter
+                              setTimeout(() => handleTestSend(starter), 100);
+                            }}
+                            disabled={!isSetupComplete}
+                            className={cn(
+                              "w-full text-left px-3 py-2 text-sm border rounded-lg truncate transition-colors",
+                              isSetupComplete
+                                ? "hover:bg-muted/50 hover:border-primary/30 cursor-pointer"
+                                : "text-muted-foreground cursor-default"
+                            )}
                           >
                             {starter}
-                          </div>
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -465,19 +488,31 @@ export function WizardAgentBuilder({
                 </div>
 
                 <div className="mt-auto">
-                  <div className="relative">
-                    <Textarea
-                      placeholder="Ask anything..."
-                      className="min-h-[60px] pr-12 resize-none rounded-xl border-muted-foreground/20 text-sm opacity-50"
-                      disabled
-                    />
-                    <Button size="icon" disabled className="absolute bottom-2 right-2 size-7 rounded-lg">
-                      <Send className="size-3.5" />
+                  {isSetupComplete ? (
+                    <Button
+                      className="w-full gap-2"
+                      onClick={() => setActiveStep("publish")}
+                    >
+                      <Send className="size-4" />
+                      Test Agent
                     </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center mt-2">
-                    Test available on Publish step
-                  </p>
+                  ) : (
+                    <>
+                      <div className="relative">
+                        <Textarea
+                          placeholder="Ask anything..."
+                          className="min-h-[60px] pr-12 resize-none rounded-xl border-muted-foreground/20 text-sm opacity-50"
+                          disabled
+                        />
+                        <Button size="icon" disabled className="absolute bottom-2 right-2 size-7 rounded-lg">
+                          <Send className="size-3.5" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground text-center mt-2">
+                        Add name and description to test
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             </>
@@ -768,13 +803,16 @@ const AVAILABLE_KNOWLEDGE_SOURCES = [
   { id: "benefits", name: "Benefits Guide.pdf", type: "upload", description: "Benefits info" },
 ];
 
-// Available workflows (mock data)
+// Mock current user ID (would come from auth context in real app)
+const CURRENT_USER_ID = "user-1";
+
+// Available workflows (mock data) - some linked to other agents
 const AVAILABLE_WORKFLOWS = [
-  { id: "password-reset", name: "Password Reset", description: "Reset user passwords in AD", category: "IT" },
-  { id: "access-request", name: "Access Request", description: "Request system access", category: "IT" },
-  { id: "ticket-create", name: "Create Ticket", description: "Create support ticket", category: "Support" },
-  { id: "vpn-access", name: "VPN Access", description: "Request VPN access", category: "IT" },
-  { id: "software-request", name: "Software Request", description: "Request software installation", category: "IT" },
+  { id: "password-reset", name: "Password Reset", description: "Reset user passwords in AD", category: "IT", linkedAgentId: "3", linkedAgentName: "Password Reset Bot", linkedAgentOwnerId: "user-2", linkedAgentOwnerName: "John Smith", linkedAgentOwnerEmail: "john.smith@company.com" },
+  { id: "access-request", name: "Access Request", description: "Request system access", category: "IT", linkedAgentId: null, linkedAgentName: null, linkedAgentOwnerId: null, linkedAgentOwnerName: null, linkedAgentOwnerEmail: null },
+  { id: "ticket-create", name: "Create Ticket", description: "Create support ticket", category: "Support", linkedAgentId: "5", linkedAgentName: "Support Agent", linkedAgentOwnerId: "user-1", linkedAgentOwnerName: "You", linkedAgentOwnerEmail: null },
+  { id: "vpn-access", name: "VPN Access", description: "Request VPN access", category: "IT", linkedAgentId: null, linkedAgentName: null, linkedAgentOwnerId: null, linkedAgentOwnerName: null, linkedAgentOwnerEmail: null },
+  { id: "software-request", name: "Software Request", description: "Request software installation", category: "IT", linkedAgentId: null, linkedAgentName: null, linkedAgentOwnerId: null, linkedAgentOwnerName: null, linkedAgentOwnerEmail: null },
 ];
 
 // Knowledge Step - Dedicated step for knowledge sources
@@ -978,6 +1016,8 @@ function ActionsStep({
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showUnlinkModal, setShowUnlinkModal] = useState(false);
+  const [workflowToUnlink, setWorkflowToUnlink] = useState<{ id: string; name: string; linkedAgentName: string } | null>(null);
 
   const filteredWorkflows = AVAILABLE_WORKFLOWS.filter((workflow) => {
     const query = searchQuery.toLowerCase();
@@ -993,6 +1033,51 @@ function ActionsStep({
       ...prev,
       actions: [...prev.actions, action.name],
     }));
+  };
+
+  const handleSelectWorkflow = (workflow: typeof AVAILABLE_WORKFLOWS[0]) => {
+    const isAdded = config.actions.includes(workflow.name);
+    if (isAdded) {
+      setSearchQuery("");
+      return;
+    }
+
+    const isLinkedElsewhere = workflow.linkedAgentId && workflow.linkedAgentName;
+    const isOwnedByCurrentUser = workflow.linkedAgentOwnerId === CURRENT_USER_ID;
+    const isBlockedByOwner = isLinkedElsewhere && !isOwnedByCurrentUser;
+
+    // Blocked - owned by someone else
+    if (isBlockedByOwner) {
+      return; // Button is disabled, this shouldn't be reached
+    }
+
+    // Check if linked to another agent (that we own)
+    if (isLinkedElsewhere && isOwnedByCurrentUser) {
+      setWorkflowToUnlink({
+        id: workflow.id,
+        name: workflow.name,
+        linkedAgentName: workflow.linkedAgentName!,
+      });
+      setShowUnlinkModal(true);
+      setSearchQuery("");
+    } else {
+      setConfig((prev) => ({
+        ...prev,
+        actions: [...prev.actions, workflow.name],
+      }));
+      setSearchQuery("");
+    }
+  };
+
+  const handleConfirmUnlink = () => {
+    if (workflowToUnlink) {
+      setConfig((prev) => ({
+        ...prev,
+        actions: [...prev.actions, workflowToUnlink.name],
+      }));
+      setShowUnlinkModal(false);
+      setWorkflowToUnlink(null);
+    }
   };
 
   return (
@@ -1020,6 +1105,38 @@ function ActionsStep({
         onOpenChange={setShowCreateModal}
         onCreateAction={handleCreateAction}
       />
+
+      {/* Unlink Confirmation Modal */}
+      {showUnlinkModal && workflowToUnlink && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 overflow-hidden">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold mb-2">Unlink Workflow</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                <strong>{workflowToUnlink.name}</strong> is currently linked to{" "}
+                <strong>{workflowToUnlink.linkedAgentName}</strong>.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Unlinking this workflow will remove it from the other agent. Each workflow can only be connected to one agent at a time.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 px-6 py-4 bg-muted/30 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowUnlinkModal(false);
+                  setWorkflowToUnlink(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmUnlink}>
+                Unlink & Add
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search input with dropdown */}
       <div className="relative">
@@ -1055,32 +1172,46 @@ function ActionsStep({
           <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-xl shadow-lg max-h-[250px] overflow-y-auto z-20">
             {filteredWorkflows.map((workflow) => {
               const isAdded = config.actions.includes(workflow.name);
+              const isLinkedElsewhere = !!(workflow.linkedAgentId && workflow.linkedAgentName);
+              const isOwnedByCurrentUser = workflow.linkedAgentOwnerId === CURRENT_USER_ID;
+              const canUnlink = isLinkedElsewhere && isOwnedByCurrentUser;
+              const isBlockedByOwner = isLinkedElsewhere && !isOwnedByCurrentUser;
               return (
                 <button
                   key={workflow.id}
                   className={cn(
-                    "w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors",
-                    isAdded && "opacity-50"
+                    "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors",
+                    isAdded && "opacity-50",
+                    isBlockedByOwner ? "opacity-60 cursor-not-allowed" : "hover:bg-muted/50"
                   )}
-                  onClick={() => {
-                    if (!isAdded) {
-                      setConfig((prev) => ({
-                        ...prev,
-                        actions: [...prev.actions, workflow.name],
-                      }));
-                    }
-                    setSearchQuery("");
-                  }}
-                  disabled={isAdded}
+                  onClick={() => handleSelectWorkflow(workflow)}
+                  disabled={isAdded || isBlockedByOwner}
                 >
                   <div className="size-9 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
                     <KeyRound className="size-4 text-purple-500" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium">{workflow.name}</p>
-                    <p className="text-xs text-muted-foreground">{workflow.category}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {workflow.category}
+                      {isBlockedByOwner && (
+                        <span className="text-red-500 ml-2">• Linked to {workflow.linkedAgentName}</span>
+                      )}
+                      {canUnlink && (
+                        <span className="text-amber-600 ml-2">• Linked to {workflow.linkedAgentName} (your agent)</span>
+                      )}
+                    </p>
                   </div>
                   {isAdded && <CheckCircle className="size-4 text-primary" />}
+                  {isBlockedByOwner && workflow.linkedAgentOwnerEmail && (
+                    <a
+                      href={`mailto:${workflow.linkedAgentOwnerEmail}?subject=Request to use ${workflow.name} workflow&body=Hi ${workflow.linkedAgentOwnerName},%0D%0A%0D%0AI would like to use the "${workflow.name}" workflow which is currently linked to your agent "${workflow.linkedAgentName}".%0D%0A%0D%0ACould you please unlink it so I can use it for my agent?%0D%0A%0D%0AThank you!`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex-shrink-0"
+                    >
+                      Contact
+                    </a>
+                  )}
                 </button>
               );
             })}
