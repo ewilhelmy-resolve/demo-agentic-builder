@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ReviewStats } from "@/components/tickets/ReviewAIResponseSheet";
 
-type CompletionState = "excellent" | "mixed" | "poor";
+type CompletionState = "excellent" | "needs_improvement" | "knowledge_gap";
 
 interface ReviewFeedbackState {
 	clusterId: string;
@@ -22,7 +22,7 @@ interface ReviewFeedbackStore {
 
 /**
  * Store for persisting review feedback state across page navigation
- * Shows banner on tickets page after poor/mixed review completion
+ * Shows contextual banners on tickets page after review completion
  */
 export const useReviewFeedbackStore = create<ReviewFeedbackStore>()(
 	persist(
@@ -30,11 +30,7 @@ export const useReviewFeedbackStore = create<ReviewFeedbackStore>()(
 			feedbackState: null,
 
 			setFeedbackState: (clusterId, state, stats) => {
-				// Only persist for poor/mixed states
-				if (state === "excellent") {
-					set({ feedbackState: null });
-					return;
-				}
+				// Persist all states for contextual banners
 				set({
 					feedbackState: {
 						clusterId,

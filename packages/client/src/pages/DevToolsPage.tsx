@@ -13,21 +13,30 @@ import { useReviewFeedbackStore } from '@/stores/reviewFeedbackStore'
 const DevToolsPage: React.FC = () => {
   const { setFeedbackState, clearFeedback, feedbackState } = useReviewFeedbackStore()
 
-  const triggerPoorBanner = () => {
-    setFeedbackState('email-signatures', 'poor', {
+  const triggerExcellentBanner = () => {
+    setFeedbackState('email-signatures', 'excellent', {
+      totalReviewed: 5,
+      trusted: 5,
+      needsImprovement: 0,
+      confidenceImprovement: 100,
+    })
+  }
+
+  const triggerNeedsImprovementBanner = () => {
+    setFeedbackState('email-signatures', 'needs_improvement', {
+      totalReviewed: 5,
+      trusted: 3,
+      needsImprovement: 2,
+      confidenceImprovement: 60,
+    })
+  }
+
+  const triggerKnowledgeGapBanner = () => {
+    setFeedbackState('email-signatures', 'knowledge_gap', {
       totalReviewed: 5,
       trusted: 1,
       needsImprovement: 4,
       confidenceImprovement: 20,
-    })
-  }
-
-  const triggerMixedBanner = () => {
-    setFeedbackState('email-signatures', 'mixed', {
-      totalReviewed: 5,
-      trusted: 2,
-      needsImprovement: 3,
-      confidenceImprovement: 40,
     })
   }
 
@@ -49,17 +58,20 @@ const DevToolsPage: React.FC = () => {
           <div className="rounded-lg border p-4 space-y-4">
             <h2 className="font-medium">Review Feedback Banner</h2>
             <p className="text-sm text-muted-foreground">
-              Test the banner that shows on /tickets after poor/mixed reviews
+              Test the contextual banners that show on /tickets after review completion
             </p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={triggerPoorBanner}>
-                Trigger Poor Banner
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={triggerExcellentBanner} className="border-emerald-300 text-emerald-700">
+                Excellent (≥80%)
               </Button>
-              <Button variant="outline" size="sm" onClick={triggerMixedBanner}>
-                Trigger Mixed Banner
+              <Button variant="outline" size="sm" onClick={triggerNeedsImprovementBanner} className="border-amber-300 text-amber-700">
+                Needs Improvement (50-79%)
+              </Button>
+              <Button variant="outline" size="sm" onClick={triggerKnowledgeGapBanner} className="border-orange-300 text-orange-700">
+                Knowledge Gap (&lt;50%)
               </Button>
               <Button variant="outline" size="sm" onClick={clearFeedback}>
-                Clear Banner
+                Clear
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
