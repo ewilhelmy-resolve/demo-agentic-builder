@@ -14,6 +14,9 @@ import { useUpdateOrganization } from "@/hooks/api/useUpdateOrganization";
 import { useUpdateProfile } from "@/hooks/api/useUpdateProfile";
 import { toast } from "@/lib/toast";
 import SettingsHeader from "@/pages/settings/SettingsHeader";
+import { useThemeStore } from "@/stores/themeStore";
+import { Sun, Moon, Monitor } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 /**
  * ProfilePage - Unified profile settings page
@@ -46,6 +49,7 @@ export default function ProfilePage() {
 		useUpdateOrganization();
 	const { mutate: deleteOwnAccount, isPending: isDeletingAccount } =
 		useDeleteOwnAccount();
+	const { theme, setTheme } = useThemeStore();
 
 	const {
 		register,
@@ -265,6 +269,55 @@ export default function ProfilePage() {
 								: "Update profile"}
 						</Button>
 					</form>
+
+					{/* Theme Settings */}
+					<div className="flex flex-col gap-4 pt-4 border-t">
+						<h4 className="text-xl font-normal text-foreground">Appearance</h4>
+						<div className="flex flex-col gap-2">
+							<Label className="text-foreground">Theme</Label>
+							<p className="text-sm text-muted-foreground">
+								Select your preferred color theme
+							</p>
+						</div>
+						<div className="flex gap-3">
+							<button
+								onClick={() => setTheme("light")}
+								className={cn(
+									"flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors min-w-[100px]",
+									theme === "light"
+										? "border-primary bg-primary/5"
+										: "border-border hover:border-muted-foreground/50"
+								)}
+							>
+								<Sun className="size-6" />
+								<span className="text-sm font-medium">Light</span>
+							</button>
+							<button
+								onClick={() => setTheme("dark")}
+								className={cn(
+									"flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors min-w-[100px]",
+									theme === "dark"
+										? "border-primary bg-primary/5"
+										: "border-border hover:border-muted-foreground/50"
+								)}
+							>
+								<Moon className="size-6" />
+								<span className="text-sm font-medium">Dark</span>
+							</button>
+							<button
+								onClick={() => setTheme("system")}
+								className={cn(
+									"flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors min-w-[100px]",
+									theme === "system"
+										? "border-primary bg-primary/5"
+										: "border-border hover:border-muted-foreground/50"
+								)}
+							>
+								<Monitor className="size-6" />
+								<span className="text-sm font-medium">System</span>
+							</button>
+						</div>
+					</div>
 
 					{isAdmin && (
 						<div className="flex flex-col gap-6">
