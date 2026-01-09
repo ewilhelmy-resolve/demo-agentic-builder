@@ -35,6 +35,7 @@ import AgentBuilderPageOld from "./components/agent-builder/AgentBuilderPage";
 import AgentsPage from "./pages/AgentsPage";
 import AgentBuilderPage from "./pages/AgentBuilderPage";
 import AgentTestPage from "./pages/AgentTestPage";
+import DashboardPage from "./pages/DashboardPage";
 
 // Feature-flagged tickets page wrapper
 function TicketsPageWithFlag() {
@@ -157,12 +158,11 @@ const router = createBrowserRouter([
 	},
 	{
 		path: "/analytics",
-		element: (
-			<ProtectedRoute>
-				{/* Analytics dashboard - future feature */}
-				<div>Analytics dashboard (future feature)</div>
-			</ProtectedRoute>
-		),
+		element: <DashboardPage />,
+	},
+	{
+		path: "/dashboard",
+		element: <DashboardPage />,
 	},
 	{
 		path: "/devtools",
