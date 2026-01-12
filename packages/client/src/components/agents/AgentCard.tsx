@@ -22,6 +22,8 @@ export interface AgentCardProps {
   icon: LucideIcon;
   /** Background color for icon container */
   iconBgColor?: string;
+  /** Agent skills */
+  skills?: string[];
   /** Click handler */
   onClick?: () => void;
   /** Additional className */
@@ -39,6 +41,7 @@ export function AgentCard({
   status,
   icon: Icon,
   iconBgColor = "bg-slate-100",
+  skills,
   onClick,
   className,
 }: AgentCardProps) {
@@ -49,7 +52,7 @@ export function AgentCard({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex flex-col items-start p-6 rounded-xl border border-border bg-gradient-to-r from-white/30 to-white/30 bg-muted/50",
+        "flex flex-col items-start p-6 rounded-xl border border-border bg-card",
         "hover:border-primary/20 hover:bg-muted/70 transition-colors cursor-pointer text-left w-full",
         className
       )}
@@ -68,6 +71,12 @@ export function AgentCard({
       <p className="text-sm text-muted-foreground truncate w-full">
         {description}
       </p>
+      {skills && skills.length > 0 && (
+        <p className="text-xs text-muted-foreground truncate w-full mt-1">
+          <span className="font-medium">Skills:</span> {skills.slice(0, 2).join(", ")}
+          {skills.length > 2 && ` +${skills.length - 2}`}
+        </p>
+      )}
     </button>
   );
 }

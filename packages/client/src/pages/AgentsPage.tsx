@@ -66,25 +66,28 @@ const recentAgents = [
     id: "1",
     name: "HelpDesk Advisor",
     description: "Answers IT support questions",
-    status: "draft" as const,
-    icon: Squirrel,
-    iconBgColor: "bg-slate-100",
+    status: "published" as const,
+    icon: Headphones,
+    iconBgColor: "bg-blue-100",
+    skills: ["Reset password", "Unlock account", "Request system access"],
   },
   {
     id: "2",
     name: "Onboarding Compliance Checker",
     description: "Answers from compliance docs",
     status: "published" as const,
-    icon: Stamp,
-    iconBgColor: "bg-yellow-50",
+    icon: ShieldCheck,
+    iconBgColor: "bg-emerald-100",
+    skills: ["Verify I-9 forms", "Check background status", "Review tax docs"],
   },
   {
     id: "3",
     name: "Password Reset Bot",
     description: "Automates password resets",
-    status: "published" as const,
-    icon: RectangleEllipsis,
-    iconBgColor: "bg-purple-50",
+    status: "draft" as const,
+    icon: Key,
+    iconBgColor: "bg-purple-100",
+    skills: ["Password Reset"],
   },
 ];
 
@@ -95,6 +98,7 @@ const mockAgents: Agent[] = [
     name: "HelpDesk Advisor",
     description: "Answers IT support questions",
     status: "published",
+    skills: ["Reset password", "Unlock account", "Request system access"],
     updatedBy: { initials: "CN", color: "teal" },
     owner: { initials: "CN", color: "teal" },
     lastUpdated: "16 Dec, 2025 11:44",
@@ -104,6 +108,7 @@ const mockAgents: Agent[] = [
     name: "Onboarding Compliance Checker",
     description: "Answers from compliance docs",
     status: "published",
+    skills: ["Verify I-9 forms", "Check background status", "Review tax docs"],
     updatedBy: { initials: "KL", color: "purple" },
     owner: { initials: "KL", color: "purple" },
     lastUpdated: "06 Dec, 2025 12:03",
@@ -113,27 +118,30 @@ const mockAgents: Agent[] = [
     name: "Password Reset Bot",
     description: "Automates password resets",
     status: "draft",
+    skills: ["Password Reset"],
     updatedBy: { initials: "AJ", color: "sky" },
     owner: null,
-    lastUpdated: "03 Dec, 2026 13:27",
+    lastUpdated: "03 Dec, 2025 13:27",
   },
   {
     id: "4",
-    name: "Password Reset Bot",
-    description: "Automates password resets",
+    name: "PTO Balance Checker",
+    description: "Checks employee time off balances",
     status: "published",
+    skills: ["Check PTO balance", "Request time off"],
     updatedBy: { initials: "JS", color: "indigo" },
-    owner: { initials: "AJ", color: "sky" },
-    lastUpdated: "23 Nov, 2026 12:07",
+    owner: { initials: "JS", color: "indigo" },
+    lastUpdated: "23 Nov, 2025 12:07",
   },
   {
     id: "5",
-    name: "Password Reset Bot",
-    description: "Automates password resets",
-    status: "draft",
+    name: "Employee Directory Bot",
+    description: "Looks up employee information",
+    status: "published",
+    skills: ["Lookup employee", "Find department", "Get contact info"],
     updatedBy: { initials: "MM", color: "emerald" },
-    owner: null,
-    lastUpdated: "03 Nov, 2026 18:07",
+    owner: { initials: "MM", color: "emerald" },
+    lastUpdated: "03 Nov, 2025 18:07",
   },
 ];
 
@@ -156,6 +164,7 @@ interface RecentAgent {
   status: "draft" | "published";
   icon: LucideIcon;
   iconBgColor: string;
+  skills?: string[];
 }
 
 export default function AgentsPage() {
@@ -323,6 +332,7 @@ export default function AgentsPage() {
                   status={agent.status}
                   icon={agent.icon}
                   iconBgColor={agent.iconBgColor}
+                  skills={agent.skills}
                   onClick={() => handleRecentAgentClick(agent.id)}
                 />
               ))}

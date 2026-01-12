@@ -37,6 +37,7 @@ export interface Agent {
   name: string;
   description: string;
   status: AgentStatus;
+  skills?: string[];
   updatedBy: {
     initials: string;
     color: string;
@@ -171,7 +172,8 @@ export function AgentsTable({
                 aria-label="Select all agents"
               />
             </TableHead>
-            <TableHead className="min-w-[300px]">Name</TableHead>
+            <TableHead className="min-w-[250px]">Name</TableHead>
+            <TableHead className="w-[200px]">Skills</TableHead>
             <TableHead className="w-[127px]">
               <SortableHeader field="status">Status</SortableHeader>
             </TableHead>
@@ -221,6 +223,22 @@ export function AgentsTable({
                     {agent.description}
                   </span>
                 </div>
+              </TableCell>
+              <TableCell>
+                {agent.skills && agent.skills.length > 0 ? (
+                  <div className="flex items-center gap-1 max-w-[180px]">
+                    <span className="text-sm text-muted-foreground truncate">
+                      {agent.skills.slice(0, 2).join(", ")}
+                    </span>
+                    {agent.skills.length > 2 && (
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        +{agent.skills.length - 2}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground text-sm">--</span>
+                )}
               </TableCell>
               <TableCell>
                 <Badge

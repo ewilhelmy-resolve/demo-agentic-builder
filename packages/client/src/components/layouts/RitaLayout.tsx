@@ -23,7 +23,7 @@ import {
 	LogOut,
 	MailOpen,
 	Plus,
-	Settings,
+	// Settings, // Hidden for now with DevTools
 	SquarePen,
 	Ticket,
 	Upload,
@@ -94,7 +94,7 @@ export interface RitaLayoutProps {
 // Using background-image instead of <img> for better caching
 const RitaLogo = memo(() => (
 	<div
-		className="w-[179px] h-[18px] bg-no-repeat bg-center bg-contain"
+		className="w-[99px] h-[19px] bg-no-repeat bg-left bg-contain"
 		style={{ backgroundImage: `url('${assetPath("/logo-rita.svg")}')` }}
 		role="img"
 		aria-label="RITA Logo"
@@ -324,7 +324,8 @@ function RitaLayoutContent({ children, activePage = "chat" }: RitaLayoutProps) {
 									</span>
 								</SidebarMenuButton>
 							</SidebarMenuItem>
-								{import.meta.env.DEV && (
+								{/* DevTools nav hidden for now
+							{import.meta.env.DEV && (
 									<SidebarMenuItem>
 										<SidebarMenuButton
 											className="flex items-center gap-2 px-2 py-2 h-8 rounded-md"
@@ -338,6 +339,7 @@ function RitaLayoutContent({ children, activePage = "chat" }: RitaLayoutProps) {
 										</SidebarMenuButton>
 									</SidebarMenuItem>
 								)}
+							*/}
 							</SidebarMenu>
 						</SidebarGroup>
 					)}
@@ -484,8 +486,8 @@ function RitaLayoutContent({ children, activePage = "chat" }: RitaLayoutProps) {
 						<Breadcrumb>
 							<BreadcrumbList>
 								<BreadcrumbItem>
-									<span className="text-sm text-foreground leading-none">
-										RITA Go
+									<span className="text-sm text-foreground leading-none capitalize">
+										{activePage === "automations" ? "Agents" : activePage}
 									</span>
 								</BreadcrumbItem>
 							</BreadcrumbList>
