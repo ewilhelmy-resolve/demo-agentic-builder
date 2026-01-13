@@ -33,6 +33,8 @@ import confetti from "canvas-confetti";
 import { WizardAgentBuilder } from "@/components/agents/WizardAgentBuilder";
 import { WizardFloatBuilder } from "@/components/agents/WizardFloatBuilder";
 import { CanvasBuilder } from "@/components/agents/CanvasBuilder";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { SaveStatusIndicator } from "@/components/agents/SaveStatusIndicator";
 
 interface Message {
   id: string;
@@ -129,9 +131,6 @@ const AVAILABLE_KNOWLEDGE_SOURCES = [
   { id: "notion-wiki", name: "Notion - Company Wiki", description: "Internal knowledge base", type: "connection", tags: ["wiki", "notion"] },
   { id: "gdrive-hr", name: "Google Drive - HR Folder", description: "HR shared drive", type: "connection", tags: ["hr", "gdrive"] },
 ];
-
-// Mock current user ID (would come from auth context in real app)
-const CURRENT_USER_ID = "user-1";
 
 // Mock available workflows in the org (1:1 with agents)
 const AVAILABLE_WORKFLOWS = [
@@ -295,7 +294,6 @@ export default function AgentBuilderPage() {
   const [inputValue, setInputValue] = useState("");
   const [step, setStep] = useState<ConversationStep>(isEditing || isDuplicate ? "done" : "start");
   const [isTyping, setIsTyping] = useState(false);
-  const [isRunningDemo, setIsRunningDemo] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [config, setConfig] = useState<AgentConfig>(duplicatedConfig || savedAgent || {
     name: agentName,
@@ -375,6 +373,19 @@ export default function AgentBuilderPage() {
   const [builderMode, setBuilderMode] = useState<"chat" | "wizard" | "wizard-float" | "canvas">(
     modeParam && ["chat", "wizard", "wizard-float", "canvas"].includes(modeParam) ? modeParam : "chat"
   );
+
+  // Auto-save with 1.5s debounce
+  const { status: saveStatus, isDirty, error: saveError } = useAutoSave({
+    data: config,
+    onSave: async (data) => {
+      // Mock save - in production this would call the API
+      console.log("Auto-saving agent config:", data);
+      // Simulate network delay
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      // In production: await agentApi.saveAgent(agentId, data);
+    },
+    enabled: step === "done" || isEditing, // Only auto-save when in configure mode
+  });
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -878,149 +889,6 @@ export default function AgentBuilderPage() {
         `Or switch to the **Configure** tab to make changes directly.`
       );
     }
-  };
-
-  // Demo flow data
-  const demoResponses = [
-    "An HR agent that helps employees understand benefits and PTO.",
-    "A friendly HR benefits advisor.",
-    "Answering questions about health insurance, PTO, enrollment, and where to find HR policies.",
-    "When the employee gets their answer, or when it needs to direct them to HR.",
-  ];
-
-  const runDemo = async () => {
-    if (isRunningDemo) return;
-    setIsRunningDemo(true);
-
-    // Reset state
-    setMessages([
-      {
-        id: "1",
-        role: "assistant",
-        content: `Hi! I can help you build a new agent.\nFirst, what kind of agent are you building today?`,
-      },
-    ]);
-    setStep("start");
-    setConfig({
-      name: agentName,
-      description: "",
-      role: "",
-      responsibilities: "",
-      completionCriteria: "",
-      agentType: null,
-      knowledgeSources: [],
-      workflows: [],
-      hasRequiredConnections: false,
-      instructions: "",
-      conversationStarters: [],
-      guardrails: [],
-      iconId: "bot",
-      iconColorId: "slate",
-      capabilities: { webSearch: true, imageGeneration: false, useAllWorkspaceContent: false },
-    });
-    setShowConfirmButtons(false);
-    setShowKnowledgeButtons(false);
-    setShowWorkflowButtons(false);
-    setShowTypeSelector(false);
-    setShowSourceSelector(false);
-    setShowTypeConfirmation(false);
-    setShowTriggerPhrases(false);
-    setSuggestedTriggerPhrases([]);
-    setShowGuardrails(false);
-    setGuardrailInput("");
-    setSelectedType(null);
-    setSuggestedType("answer");
-    setSelectedSources([]);
-    setSelectedWorkflows([]);
-
-    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-    // Step 1: Intent
-    await delay(1000);
-    const msg1: Message = { id: Date.now().toString(), role: "user", content: demoResponses[0] };
-    setMessages((prev) => [...prev, msg1]);
-    setConfig((prev) => ({ ...prev, description: demoResponses[0] }));
-    setStep("role");
-    setIsTyping(true);
-    setStatusMessage("Analyzing your requirements...");
-    await delay(1500);
-    setIsTyping(false);
-    setStatusMessage(null);
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: `Got it. Let's define who this agent is.\n\n**How would you describe the role or persona of this agent?**\nFor example: "a friendly HR advisor" or "an on-call IT specialist."`,
-      },
-    ]);
-
-    // Step 2: Role
-    await delay(1500);
-    const msg2: Message = { id: Date.now().toString(), role: "user", content: demoResponses[1] };
-    setMessages((prev) => [...prev, msg2]);
-    setConfig((prev) => ({ ...prev, role: demoResponses[1] }));
-    setStep("responsibilities");
-    setIsTyping(true);
-    setStatusMessage("Defining agent persona...");
-    await delay(1200);
-    setIsTyping(false);
-    setStatusMessage(null);
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: `Nice. Now let's get specific.\n\n**What should this agent help with day to day?**\nYou can list the types of questions or situations it should handle.`,
-      },
-    ]);
-
-    // Step 3: Responsibilities
-    await delay(1500);
-    const msg3: Message = { id: Date.now().toString(), role: "user", content: demoResponses[2] };
-    setMessages((prev) => [...prev, msg3]);
-    setConfig((prev) => ({ ...prev, responsibilities: demoResponses[2] }));
-    setStep("completion");
-    setIsTyping(true);
-    setStatusMessage("Configuring responsibilities...");
-    await delay(1000);
-    setIsTyping(false);
-    setStatusMessage(null);
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: `Almost there.\n\n**When should this agent consider its job complete?**\nFor example, when the question is answered, when next steps are provided, or when it needs to hand off to a human.`,
-      },
-    ]);
-
-    // Step 4: Completion - show type selector and stop demo for user interaction
-    await delay(1500);
-    const msg4: Message = { id: Date.now().toString(), role: "user", content: demoResponses[3] };
-    setMessages((prev) => [...prev, msg4]);
-    setConfig((prev) => ({
-      ...prev,
-      completionCriteria: demoResponses[3],
-    }));
-    setStep("select_type");
-    setIsTyping(true);
-    setStatusMessage("Determining best agent type...");
-    await delay(2000);
-    setIsTyping(false);
-    setStatusMessage(null);
-    setSuggestedType("answer");
-    setSelectedType("answer");
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        role: "assistant",
-        content: `Based on what you shared, I'd suggest an **Answer Agent** for this use case.\n\nPlease select the agent type that best fits your needs:`,
-      },
-    ]);
-    setShowTypeSelector(true);
-    setIsRunningDemo(false);
   };
 
   const handleConfirm = () => {
@@ -1797,6 +1665,13 @@ export default function AgentBuilderPage() {
               "Draft"
             )}
           </Badge>
+          {(step === "done" || isEditing) && (
+            <SaveStatusIndicator
+              status={saveStatus}
+              isDirty={isDirty}
+              error={saveError}
+            />
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" className="gap-2">
@@ -2436,11 +2311,11 @@ export default function AgentBuilderPage() {
                     </div>
                     <Textarea
                       id="instructions"
-                      value={config.instructions || `This agent can help users with:\n\n${config.workflows.map(s => `• ${s}`).join("\n")}`}
+                      value={config.instructions || `# ${config.name || "Agent"}\n\n## What you do\nHelp users with ${config.workflows.slice(0, 2).join(" and ").toLowerCase()}${config.workflows.length > 2 ? ` and ${config.workflows.length - 2} more tasks` : ""}. Guide them through each process step-by-step.\n\n## Skills available\n${config.workflows.map(s => `- ${s}`).join("\n")}\n\n## How you work\n1) **Understand** - Ask clarifying questions to understand the user's needs\n2) **Execute** - Use your skills to complete the requested task\n3) **Confirm** - Verify the task was completed successfully\n\n## Important notes\n- Always verify user identity before performing sensitive actions\n- If unsure, ask for clarification rather than assuming`}
                       onChange={(e) =>
                         setConfig((prev) => ({ ...prev, instructions: e.target.value }))
                       }
-                      className="min-h-[100px] resize-none text-sm"
+                      className="min-h-[200px] resize-none text-sm font-mono"
                     />
                   </div>
                 )}

@@ -14,6 +14,7 @@ import { AgentCard } from "@/components/agents/AgentCard";
 import { AgentsTable, type Agent } from "@/components/agents/AgentsTable";
 import { CreateAgentDialog } from "@/components/agents/CreateAgentDialog";
 import { AgentTemplateModal, type AgentTemplate } from "@/components/agents/AgentTemplateModal";
+import { DeleteAgentModal } from "@/components/agents/DeleteAgentModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -176,6 +177,8 @@ export default function AgentsPage() {
   const [statusFilter, setStatusFilter] = useState<FilterType>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
 
   // Dynamic agents list (includes newly published agents)
   const [agents, setAgents] = useState<Agent[]>(mockAgents);
@@ -275,11 +278,39 @@ export default function AgentsPage() {
   };
 
   const handleAgentClick = (agent: Agent) => {
-    navigate(`/agents/${agent.id}`);
+    // Navigate to chat (view) page for published, builder for draft
+    if (agent.status === "published") {
+      navigate(`/agents/${agent.id}/chat`);
+    } else {
+      navigate(`/agents/${agent.id}`);
+    }
   };
 
-  const handleRecentAgentClick = (agentId: string) => {
-    navigate(`/agents/${agentId}`);
+  const handleRecentAgentClick = (agentId: string, status: "draft" | "published") => {
+    if (status === "published") {
+      navigate(`/agents/${agentId}/chat`);
+    } else {
+      navigate(`/agents/${agentId}`);
+    }
+  };
+
+  const handleDeleteClick = (agent: Agent) => {
+    setAgentToDelete(agent);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!agentToDelete) return;
+
+    // Remove from agents list
+    setAgents((prev) => prev.filter((a) => a.id !== agentToDelete.id));
+
+    // Remove from recent agents if present
+    setDynamicRecentAgents((prev) => prev.filter((a) => a.id !== agentToDelete.id));
+
+    // Reset state
+    setAgentToDelete(null);
+    setDeleteModalOpen(false);
   };
 
   return (
@@ -333,7 +364,7 @@ export default function AgentsPage() {
                   icon={agent.icon}
                   iconBgColor={agent.iconBgColor}
                   skills={agent.skills}
-                  onClick={() => handleRecentAgentClick(agent.id)}
+                  onClick={() => handleRecentAgentClick(agent.id, agent.status)}
                 />
               ))}
             </div>
@@ -449,7 +480,7 @@ export default function AgentsPage() {
               agents={filteredAgents}
               onAgentClick={handleAgentClick}
               onEdit={(agent) => navigate(`/agents/${agent.id}/edit`)}
-              onDelete={(agent) => console.log("Delete", agent)}
+              onDelete={handleDeleteClick}
               onDuplicate={(agent) => console.log("Duplicate", agent)}
             />
           </div>
@@ -467,6 +498,22 @@ export default function AgentsPage() {
         onOpenChange={setTemplateModalOpen}
         onSelectTemplate={handleSelectTemplate}
       />
+
+      {agentToDelete && (
+        <DeleteAgentModal
+          open={deleteModalOpen}
+          onOpenChange={setDeleteModalOpen}
+          agentName={agentToDelete.name}
+          agentStatus={agentToDelete.status}
+          impact={{
+            skills: agentToDelete.skills?.length || 0,
+            conversationStarters: 3, // Mock data
+            usersThisWeek: agentToDelete.status === "published" ? 24 : 0,
+            linkedWorkflows: agentToDelete.status === "published" ? ["Password Reset"] : [],
+          }}
+          onConfirmDelete={handleConfirmDelete}
+        />
+      )}
     </RitaLayout>
   );
 }

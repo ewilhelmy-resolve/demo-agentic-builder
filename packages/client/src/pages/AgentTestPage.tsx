@@ -1,12 +1,16 @@
 /**
- * AgentTestPage - Test agent before publishing
+ * AgentTestPage - Full-page test mode for agents
  *
- * Full-screen chat interface for testing agent behavior
- * with the current draft configuration
+ * Features:
+ * - Full-screen chat interface
+ * - Test scenarios panel (suggested prompts)
+ * - Guardrails indicator
+ * - Reset and publish controls
+ * - Supports both URL params (/agents/:id/test) and navigation state
  */
 
 import { useState, useRef, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -21,9 +25,43 @@ import {
   BookOpen,
   RotateCcw,
   CheckCircle,
+  Lightbulb,
+  ShieldAlert,
+  ChevronRight,
+  TrendingUp,
+  ClipboardList,
+  LineChart,
+  Briefcase,
+  Users,
+  Landmark,
+  Truck,
+  Award,
+  Settings,
+  AlertCircle,
+  Rocket,
+  GraduationCap,
+  Heart,
+  Zap,
+  Globe,
+  Lock,
+  Mail,
+  Phone,
+  Star,
+  Target,
+  ThumbsUp,
+  Wrench,
+  Calendar,
+  Coffee,
+  Database,
+  Folder,
+  Home,
+  Layers,
+  Map,
+  Package,
+  ShoppingCart,
 } from "lucide-react";
 
-// Icon mapping
+// Icon mapping - extended
 const ICON_MAP: Record<string, React.ElementType> = {
   squirrel: Squirrel,
   bot: Bot,
@@ -31,6 +69,37 @@ const ICON_MAP: Record<string, React.ElementType> = {
   "shield-check": ShieldCheck,
   key: Key,
   "book-open": BookOpen,
+  "trending-up": TrendingUp,
+  "clipboard-list": ClipboardList,
+  "line-chart": LineChart,
+  briefcase: Briefcase,
+  users: Users,
+  landmark: Landmark,
+  truck: Truck,
+  award: Award,
+  settings: Settings,
+  "alert-circle": AlertCircle,
+  rocket: Rocket,
+  "graduation-cap": GraduationCap,
+  heart: Heart,
+  zap: Zap,
+  globe: Globe,
+  lock: Lock,
+  mail: Mail,
+  phone: Phone,
+  star: Star,
+  target: Target,
+  "thumbs-up": ThumbsUp,
+  wrench: Wrench,
+  calendar: Calendar,
+  coffee: Coffee,
+  database: Database,
+  folder: Folder,
+  home: Home,
+  layers: Layers,
+  map: Map,
+  package: Package,
+  "shopping-cart": ShoppingCart,
 };
 
 const COLOR_MAP: Record<string, { bg: string; text: string }> = {
@@ -39,6 +108,53 @@ const COLOR_MAP: Record<string, { bg: string; text: string }> = {
   emerald: { bg: "bg-emerald-600", text: "text-white" },
   purple: { bg: "bg-purple-600", text: "text-white" },
   orange: { bg: "bg-orange-500", text: "text-white" },
+  rose: { bg: "bg-rose-500", text: "text-white" },
+};
+
+// Mock saved agents for URL-based loading
+const MOCK_SAVED_AGENTS: Record<string, AgentConfig> = {
+  "1": {
+    name: "HelpDesk Advisor",
+    description: "Answers IT support questions",
+    instructions: "Help users with IT-related questions. Be patient and thorough.",
+    role: "IT Support Specialist",
+    completionCriteria: "When the user's issue is resolved or escalated",
+    iconId: "headphones",
+    iconColorId: "blue",
+    agentType: "answer",
+    conversationStarters: ["I need to reset my password", "My VPN isn't connecting", "How do I request software?"],
+    knowledgeSources: ["IT Knowledge Base", "Software Catalog"],
+    workflows: ["Reset password", "Unlock account", "Request system access"],
+    guardrails: ["salary", "performance reviews"],
+  },
+  "2": {
+    name: "Onboarding Compliance Checker",
+    description: "Answers from compliance docs",
+    instructions: "Only answer from approved compliance documents. Be accurate.",
+    role: "Compliance Specialist",
+    completionCriteria: "When compliance question is answered with documentation",
+    iconId: "shield-check",
+    iconColorId: "emerald",
+    agentType: "knowledge",
+    conversationStarters: ["Is my I-9 complete?", "What background checks are required?", "Where do I submit tax forms?"],
+    knowledgeSources: ["Compliance Handbook", "HR Policies"],
+    workflows: ["Verify I-9 forms", "Check background status", "Review tax docs"],
+    guardrails: ["personal opinions", "legal advice"],
+  },
+  "3": {
+    name: "Password Reset Bot",
+    description: "Automates password resets",
+    instructions: "Guide users through password reset workflow.",
+    role: "Automation Assistant",
+    completionCriteria: "When password is successfully reset",
+    iconId: "key",
+    iconColorId: "purple",
+    agentType: "workflow",
+    conversationStarters: ["I forgot my password", "Reset my AD password", "I'm locked out"],
+    knowledgeSources: [],
+    workflows: ["Password Reset"],
+    guardrails: [],
+  },
 };
 
 interface AgentConfig {
@@ -52,11 +168,8 @@ interface AgentConfig {
   agentType: "answer" | "knowledge" | "workflow" | null;
   conversationStarters: string[];
   knowledgeSources: string[];
-  actions: string[];
+  workflows: string[];
   guardrails: string[];
-  interactionStyle: string;
-  contextSwitching: boolean;
-  ticketCreation: boolean;
 }
 
 interface ChatMessage {
@@ -68,7 +181,12 @@ interface ChatMessage {
 export default function AgentTestPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const config = location.state?.config as AgentConfig | undefined;
+  const { id: agentId } = useParams<{ id: string }>();
+
+  // Try to load config from: 1) navigation state, 2) URL params
+  const stateConfig = location.state?.config as AgentConfig | undefined;
+  const urlConfig = agentId ? MOCK_SAVED_AGENTS[agentId] : undefined;
+  const config = stateConfig || urlConfig;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -86,20 +204,31 @@ export default function AgentTestPage() {
     inputRef.current?.focus();
   }, []);
 
-  // Handle no config (direct navigation)
+  // Handle no config (direct navigation without ID or state)
   if (!config) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
+          <Bot className="size-12 mx-auto text-muted-foreground" />
           <p className="text-muted-foreground">No agent configuration found.</p>
-          <Button onClick={() => navigate(-1)}>Go Back</Button>
+          <p className="text-sm text-muted-foreground">
+            Navigate here from the agent builder or use a valid agent ID.
+          </p>
+          <Button onClick={() => navigate("/agents")}>Back to Agents</Button>
         </div>
       </div>
     );
   }
 
-  const Icon = ICON_MAP[config.iconId] || Squirrel;
+  const Icon = ICON_MAP[config.iconId] || Bot;
   const color = COLOR_MAP[config.iconColorId] || COLOR_MAP.slate;
+
+  // Generate suggested test prompts based on agent config
+  const testSuggestions = [
+    ...config.conversationStarters.filter((s) => s.trim()),
+    ...(config.workflows.length > 0 ? [`Can you help me with ${config.workflows[0].toLowerCase()}?`] : []),
+    ...(config.guardrails.length > 0 ? [`What can you tell me about ${config.guardrails[0]}?`] : []),
+  ].slice(0, 5);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -115,7 +244,7 @@ export default function AgentTestPage() {
     setIsLoading(true);
 
     // Simulate agent response based on configuration
-    await new Promise((r) => setTimeout(r, 1000 + Math.random() * 1000));
+    await new Promise((r) => setTimeout(r, 800 + Math.random() * 800));
 
     const assistantMessage: ChatMessage = {
       id: (Date.now() + 1).toString(),
@@ -127,8 +256,8 @@ export default function AgentTestPage() {
     setIsLoading(false);
   };
 
-  const handleConversationStarter = (starter: string) => {
-    setInput(starter);
+  const handleSuggestionClick = (suggestion: string) => {
+    setInput(suggestion);
     inputRef.current?.focus();
   };
 
@@ -139,13 +268,20 @@ export default function AgentTestPage() {
   };
 
   const handleBack = () => {
-    window.history.back();
+    if (agentId) {
+      navigate(`/agents/${agentId}`);
+    } else {
+      navigate(-1);
+    }
   };
 
   const handlePublish = () => {
-    // Navigate back - ideally would trigger publish on return
-    // For now, go back to the builder
-    window.history.back();
+    // Navigate back to builder - would trigger publish in real implementation
+    if (agentId) {
+      navigate(`/agents/${agentId}`, { state: { triggerPublish: true } });
+    } else {
+      navigate(-1);
+    }
   };
 
   return (
@@ -153,7 +289,7 @@ export default function AgentTestPage() {
       {/* Header */}
       <header className="flex items-center justify-between px-5 py-3 border-b bg-white">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={handleBack}>
+          <Button variant="ghost" size="icon" onClick={handleBack} aria-label="Back to editor">
             <ArrowLeft className="size-4" />
           </Button>
           <div className={cn("size-8 rounded-lg flex items-center justify-center", color.bg)}>
@@ -161,7 +297,9 @@ export default function AgentTestPage() {
           </div>
           <div>
             <span className="font-medium">{config.name}</span>
-            <span className="text-xs text-muted-foreground ml-2">Test Mode</span>
+            <span className="text-xs text-muted-foreground ml-2 px-2 py-0.5 bg-amber-100 text-amber-700 rounded">
+              Test Mode
+            </span>
           </div>
         </div>
 
@@ -172,119 +310,172 @@ export default function AgentTestPage() {
           </Button>
           <Button size="sm" onClick={handlePublish} className="gap-2">
             <CheckCircle className="size-4" />
-            Looks Good, Publish
+            Publish
           </Button>
         </div>
       </header>
 
-      {/* Chat area */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto py-6 px-4 space-y-4">
-          {/* Welcome message */}
-          {messages.length === 0 && (
-            <div className="text-center py-12 space-y-4">
-              <div className={cn("size-16 rounded-xl flex items-center justify-center mx-auto", color.bg)}>
-                <Icon className={cn("size-8", color.text)} />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold">{config.name}</h2>
-                <p className="text-muted-foreground mt-1">{config.description}</p>
-              </div>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                Test your agent by sending messages below. The agent will respond based on its configuration.
-              </p>
+      {/* Main content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Chat area */}
+        <div className="flex-1 flex flex-col">
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-2xl mx-auto py-6 px-4 space-y-4">
+              {/* Welcome message */}
+              {messages.length === 0 && (
+                <div className="text-center py-8 space-y-4">
+                  <div className={cn("size-16 rounded-xl flex items-center justify-center mx-auto", color.bg)}>
+                    <Icon className={cn("size-8", color.text)} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold">{config.name}</h2>
+                    <p className="text-muted-foreground mt-1">{config.description}</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                    Test your agent by sending messages below. Responses are simulated based on the agent's configuration.
+                  </p>
+                </div>
+              )}
 
-              {/* Conversation starters */}
-              {config.conversationStarters.filter((s) => s.trim()).length > 0 && (
-                <div className="pt-4">
-                  <p className="text-xs text-muted-foreground mb-3">Try one of these:</p>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {config.conversationStarters
-                      .filter((s) => s.trim())
-                      .map((starter, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => handleConversationStarter(starter)}
-                          className="px-4 py-2 text-sm border rounded-full hover:bg-muted transition-colors"
-                        >
-                          {starter}
-                        </button>
-                      ))}
+              {/* Messages */}
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={cn("flex gap-3", msg.role === "user" ? "justify-end" : "justify-start")}
+                >
+                  {msg.role === "assistant" && (
+                    <div className={cn("size-8 rounded-lg flex items-center justify-center flex-shrink-0", color.bg)}>
+                      <Icon className={cn("size-4", color.text)} />
+                    </div>
+                  )}
+                  <div
+                    className={cn(
+                      "max-w-[75%] px-4 py-3 rounded-2xl",
+                      msg.role === "user"
+                        ? "bg-primary text-primary-foreground rounded-br-md"
+                        : "bg-muted rounded-bl-md"
+                    )}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                </div>
+              ))}
+
+              {/* Loading indicator */}
+              {isLoading && (
+                <div className="flex gap-3">
+                  <div className={cn("size-8 rounded-lg flex items-center justify-center flex-shrink-0", color.bg)}>
+                    <Icon className={cn("size-4", color.text)} />
+                  </div>
+                  <div className="bg-muted px-4 py-3 rounded-2xl rounded-bl-md">
+                    <Loader2 className="size-4 animate-spin text-muted-foreground" />
                   </div>
                 </div>
               )}
+
+              <div ref={chatEndRef} />
             </div>
-          )}
-
-          {/* Messages */}
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={cn(
-                "flex gap-3",
-                msg.role === "user" ? "justify-end" : "justify-start"
-              )}
-            >
-              {msg.role === "assistant" && (
-                <div className={cn("size-8 rounded-lg flex items-center justify-center flex-shrink-0", color.bg)}>
-                  <Icon className={cn("size-4", color.text)} />
-                </div>
-              )}
-              <div
-                className={cn(
-                  "max-w-[75%] px-4 py-3 rounded-2xl",
-                  msg.role === "user"
-                    ? "bg-primary text-primary-foreground rounded-br-md"
-                    : "bg-muted rounded-bl-md"
-                )}
-              >
-                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-              </div>
-            </div>
-          ))}
-
-          {/* Loading indicator */}
-          {isLoading && (
-            <div className="flex gap-3">
-              <div className={cn("size-8 rounded-lg flex items-center justify-center flex-shrink-0", color.bg)}>
-                <Icon className={cn("size-4", color.text)} />
-              </div>
-              <div className="bg-muted px-4 py-3 rounded-2xl rounded-bl-md">
-                <Loader2 className="size-4 animate-spin text-muted-foreground" />
-              </div>
-            </div>
-          )}
-
-          <div ref={chatEndRef} />
-        </div>
-      </div>
-
-      {/* Input area */}
-      <div className="border-t bg-white px-4 py-4">
-        <div className="max-w-2xl mx-auto">
-          <div className="flex gap-2">
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              placeholder="Type a message to test your agent..."
-              className="flex-1 px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              disabled={isLoading}
-            />
-            <Button onClick={handleSend} disabled={!input.trim() || isLoading}>
-              <Send className="size-4" />
-            </Button>
           </div>
-          <p className="text-xs text-muted-foreground text-center mt-3">
-            This is a test conversation. Responses are simulated based on your agent's configuration.
-          </p>
+
+          {/* Input area */}
+          <div className="border-t bg-white px-4 py-4">
+            <div className="max-w-2xl mx-auto">
+              <div className="flex gap-2">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder="Type a message to test your agent..."
+                  className="flex-1 px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  disabled={isLoading}
+                />
+                <Button onClick={handleSend} disabled={!input.trim() || isLoading}>
+                  <Send className="size-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground text-center mt-3">
+                Test conversation - responses are simulated based on agent configuration
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right panel - Test Scenarios */}
+        <div className="w-80 border-l bg-white p-4 overflow-y-auto hidden lg:block">
+          {/* Test suggestions */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Lightbulb className="size-4 text-amber-500" />
+              <h3 className="font-medium text-sm">Try these prompts</h3>
+            </div>
+            <div className="space-y-2">
+              {testSuggestions.map((suggestion, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="w-full text-left px-3 py-2 text-sm border rounded-lg hover:bg-muted transition-colors flex items-center gap-2 group"
+                >
+                  <ChevronRight className="size-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <span className="line-clamp-2">{suggestion}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Guardrails indicator */}
+          {config.guardrails.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <ShieldAlert className="size-4 text-red-500" />
+                <h3 className="font-medium text-sm">Guardrails active</h3>
+              </div>
+              <div className="bg-red-50 border border-red-100 rounded-lg p-3">
+                <p className="text-xs text-red-700 mb-2">Agent will decline questions about:</p>
+                <div className="flex flex-wrap gap-1">
+                  {config.guardrails.map((guardrail, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded"
+                    >
+                      {guardrail}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Agent capabilities */}
+          <div>
+            <h3 className="font-medium text-sm mb-3">Agent capabilities</h3>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <div className="flex items-center justify-between">
+                <span>Type</span>
+                <span className="font-medium text-foreground capitalize">{config.agentType || "Not set"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Knowledge sources</span>
+                <span className="font-medium text-foreground">{config.knowledgeSources.length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Skills</span>
+                <span className="font-medium text-foreground">{config.workflows.length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Starters</span>
+                <span className="font-medium text-foreground">
+                  {config.conversationStarters.filter((s) => s.trim()).length}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -294,61 +485,30 @@ export default function AgentTestPage() {
 // Generate simulated response based on agent configuration
 function generateResponse(input: string, config: AgentConfig): string {
   const lowerInput = input.toLowerCase();
-  const style = config.interactionStyle.toLowerCase();
 
-  // Check guardrails
+  // Check guardrails first
   for (const guardrail of config.guardrails) {
     if (guardrail && lowerInput.includes(guardrail.toLowerCase())) {
-      return `I'm sorry, but I'm not able to help with questions about ${guardrail}. Is there something else I can assist you with?`;
+      return `I'm sorry, but I'm not able to help with questions about ${guardrail}. This topic is outside my configured scope. Is there something else I can assist you with?`;
     }
   }
 
-  // Style-based responses
-  let prefix = "";
-  let suffix = "";
-
-  if (style.includes("spock")) {
-    prefix = "Fascinating. ";
-    suffix = " This is the logical conclusion based on available data.";
-  } else if (style.includes("shakespeare")) {
-    prefix = "Hark! Good friend, ";
-    suffix = " Pray tell if thou requirest further assistance.";
-  } else if (style.includes("comical")) {
-    prefix = "Alright, let me put on my thinking cap! 🎩 ";
-    suffix = " Hope that helps! 😄";
-  } else if (style.includes("professional")) {
-    prefix = "";
-    suffix = " Please let me know if you have any additional questions.";
-  } else if (style.includes("concise")) {
-    // Keep it short
-  } else {
-    // Conversational and friendly (default)
-    prefix = "Great question! ";
-    suffix = " Is there anything else you'd like to know?";
+  // Check for skill/workflow matches
+  for (const workflow of config.workflows) {
+    const workflowLower = workflow.toLowerCase();
+    if (lowerInput.includes(workflowLower) ||
+        (workflowLower.includes("password") && lowerInput.includes("password")) ||
+        (workflowLower.includes("unlock") && lowerInput.includes("unlock")) ||
+        (workflowLower.includes("access") && lowerInput.includes("access"))) {
+      return `I can help you with "${workflow}". Let me guide you through the process.\n\n**To proceed, I'll need:**\n• Your employee ID or email\n• Verification of your identity\n\nOnce verified, I'll initiate the ${workflow.toLowerCase()} workflow. Would you like to continue?`;
+    }
   }
 
-  // Generate content based on query type
-  let content = "";
-
-  if (lowerInput.includes("help") || lowerInput.includes("what can you do")) {
-    content = `I'm ${config.name}. ${config.description || "I'm here to assist you."} I have access to ${config.knowledgeSources.length} knowledge source(s) and can perform ${config.actions.length} action(s).`;
-  } else if (lowerInput.includes("weather")) {
-    content = "Based on my knowledge sources, I can provide weather-related information. Currently, the forecast shows mild conditions with temperatures around 68°F (20°C).";
-  } else if (lowerInput.includes("password") || lowerInput.includes("reset")) {
-    if (config.actions.includes("password_reset")) {
-      content = "I can help you reset your password. I'll need your email address or username to proceed with the password reset workflow.";
-    } else {
-      content = "I don't currently have access to password reset functionality. Please contact your IT administrator.";
-    }
-  } else if (lowerInput.includes("ticket") || lowerInput.includes("support")) {
-    if (config.ticketCreation) {
-      content = "I can create a support ticket for you. Please describe the issue you're experiencing and I'll file it with the appropriate team.";
-    } else {
-      content = "I'm not configured to create tickets, but I can try to help answer your question directly.";
-    }
-  } else {
-    content = `Based on my understanding of "${input.slice(0, 50)}${input.length > 50 ? "..." : ""}", here's what I found. ${config.instructions ? `As instructed, I follow these guidelines: "${config.instructions.slice(0, 100)}${config.instructions.length > 100 ? "..." : ""}"` : "I'll do my best to provide helpful information."}`;
+  // Knowledge-based response
+  if (config.knowledgeSources.length > 0) {
+    return `Based on ${config.knowledgeSources[0]}, here's what I found regarding "${input.slice(0, 40)}${input.length > 40 ? "..." : ""}":\n\nThis information comes from our verified documentation. ${config.instructions ? `\n\nNote: ${config.instructions.slice(0, 100)}${config.instructions.length > 100 ? "..." : ""}` : ""}\n\nWould you like more details on any specific aspect?`;
   }
 
-  return `${prefix}${content}${suffix}`;
+  // Generic helpful response
+  return `Thanks for your question about "${input.slice(0, 30)}${input.length > 30 ? "..." : ""}". As ${config.name}, I'm here to help.\n\n${config.description}\n\nCould you provide more details so I can better assist you?`;
 }

@@ -35,6 +35,7 @@ import AgentBuilderPageOld from "./components/agent-builder/AgentBuilderPage";
 import AgentsPage from "./pages/AgentsPage";
 import AgentBuilderPage from "./pages/AgentBuilderPage";
 import AgentTestPage from "./pages/AgentTestPage";
+import AgentChatPage from "./pages/AgentChatPage";
 import DashboardPage from "./pages/DashboardPage";
 
 // Feature-flagged tickets page wrapper
@@ -183,6 +184,14 @@ const router = createBrowserRouter([
 	{
 		path: "/agents/:id",
 		element: <AgentBuilderPage />,
+	},
+	{
+		path: "/agents/:id/chat",
+		element: <AgentChatPage />,
+	},
+	{
+		path: "/agents/:id/test",
+		element: <AgentTestPage />,
 	},
 	{
 		path: "/agents/test",
