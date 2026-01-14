@@ -33,8 +33,7 @@ import {
   Sparkles,
   BookOpen,
   Zap,
-  Link2,
-  ArrowRight,
+  Search,
   X,
 } from "lucide-react";
 
@@ -260,103 +259,104 @@ export default function AgentsPage() {
 
         {/* Education banner */}
         {showEducationBanner && (
-          <div className="bg-muted/50 border border-border rounded-xl p-8 relative overflow-hidden">
-            {/* Close button */}
-            <button
-              onClick={() => setShowEducationBanner(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-muted transition-colors"
-              aria-label="Dismiss"
-            >
-              <X className="size-4 text-muted-foreground" />
-            </button>
-
-            <div className="flex gap-8 items-center">
+          <div className="bg-neutral-50 rounded-lg p-4 relative">
+            <div className="flex gap-6 items-start">
               {/* Left content */}
-              <div className="flex-1 max-w-2xl">
-                <h2 className="text-2xl font-semibold tracking-tight mb-3">
-                  Build intelligent agents for your team
+              <div className="flex-1 flex flex-col gap-2.5 p-2.5">
+                <h2 className="text-2xl font-serif font-semibold">
+                  Build intelligent agent for your team
                 </h2>
-                <p className="text-muted-foreground mb-6 leading-relaxed">
+                <p className="text-base text-foreground leading-relaxed">
                   Create AI-powered agents that answer questions from your knowledge base,
                   automate workflows, and help your team be more productive. Connect to your
-                  existing tools and let agents handle repetitive tasks.
+                  existing skills and let agents handle repetitive tasks.
                 </p>
 
-                {/* Action links */}
-                <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-                  <button
-                    onClick={() => {/* TODO: link to docs */}}
-                    className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors text-left"
-                  >
-                    <BookOpen className="size-4" />
-                    How to create an agent
-                  </button>
-                  <button
-                    onClick={() => {/* TODO: link to docs */}}
-                    className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors text-left"
-                  >
-                    <Zap className="size-4" />
-                    Adding skills to your agent
-                  </button>
-                  <button
-                    onClick={() => {/* TODO: link to docs */}}
-                    className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors text-left"
-                  >
-                    <Link2 className="size-4" />
-                    Connecting knowledge sources
-                  </button>
-                  <button
-                    onClick={() => setTemplateModalOpen(true)}
-                    className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors text-left"
-                  >
-                    <ArrowRight className="size-4" />
-                    Browse templates
-                  </button>
-                </div>
-              </div>
-
-              {/* Right illustration - stylized agent preview */}
-              <div className="hidden lg:block w-[320px] flex-shrink-0">
-                <div className="relative">
-                  {/* Decorative background */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-purple-50 to-teal-100 rounded-xl" />
-
-                  {/* Mock agent card preview */}
-                  <div className="relative p-4">
-                    <div className="bg-white rounded-lg shadow-lg p-4 transform rotate-2 mb-2">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="size-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                          <Headphones className="size-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm">HelpDesk Advisor</div>
-                          <div className="text-xs text-muted-foreground">3 skills</div>
-                        </div>
-                      </div>
-                      <div className="flex gap-1.5">
-                        <span className="px-2 py-0.5 bg-muted rounded text-[10px]">Reset password</span>
-                        <span className="px-2 py-0.5 bg-muted rounded text-[10px]">Unlock account</span>
-                      </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow-md p-4 transform -rotate-1 ml-4">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="size-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-                          <ShieldCheck className="size-5 text-emerald-600" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm">Compliance Checker</div>
-                          <div className="text-xs text-muted-foreground">2 skills</div>
-                        </div>
-                      </div>
-                      <div className="flex gap-1.5">
-                        <span className="px-2 py-0.5 bg-muted rounded text-[10px]">Verify I-9</span>
-                        <span className="px-2 py-0.5 bg-muted rounded text-[10px]">Review docs</span>
-                      </div>
-                    </div>
+                {/* Action links - 2x2 grid */}
+                <div className="flex flex-col gap-2.5 mt-2">
+                  <div className="flex gap-28">
+                    <button
+                      onClick={() => {/* TODO: link to docs */}}
+                      className="flex items-center gap-2 text-sm font-semibold hover:text-primary transition-colors"
+                    >
+                      <BookOpen className="size-4" />
+                      How to create an agent
+                    </button>
+                    <button
+                      onClick={() => {/* TODO: link to docs */}}
+                      className="flex items-center gap-2 text-sm font-semibold hover:text-primary transition-colors"
+                    >
+                      <Zap className="size-4" />
+                      Adding skills to your agent
+                    </button>
+                  </div>
+                  <div className="flex gap-28">
+                    <button
+                      onClick={() => {/* TODO: link to docs */}}
+                      className="flex items-center gap-2 text-sm font-semibold hover:text-primary transition-colors"
+                    >
+                      <FileText className="size-4" />
+                      Connecting knowledge
+                    </button>
+                    <button
+                      onClick={() => setTemplateModalOpen(true)}
+                      className="flex items-center gap-2 text-sm font-semibold hover:text-primary transition-colors"
+                    >
+                      <Search className="size-4" />
+                      Browse templates
+                    </button>
                   </div>
                 </div>
               </div>
+
+              {/* Right illustration - gradient card with agent previews */}
+              <div className="hidden lg:block w-[445px] h-[210px] rounded-lg overflow-hidden relative flex-shrink-0"
+                style={{ background: "linear-gradient(151deg, rgba(0, 80, 199, 0.9) 49%, rgba(134, 239, 172, 0.9) 113%)" }}
+              >
+                {/* Top card - HelpDesk Advisor */}
+                <div className="absolute left-[30px] top-[19px] bg-white rounded-lg shadow-xl p-3 w-[383px]">
+                  <div className="flex gap-3 items-start mb-2">
+                    <div className="size-[74px] rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
+                      <Headphones className="size-8" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-serif text-xl tracking-tight truncate">HelpDesk Advisor</div>
+                      <div className="text-xs text-muted-foreground">3 skills</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <span className="px-2 py-0.5 bg-secondary rounded-md text-xs font-semibold">Unlock account</span>
+                    <span className="px-2 py-0.5 bg-secondary rounded-md text-xs font-semibold">Reset password</span>
+                    <span className="px-2 py-0.5 bg-secondary rounded-md text-xs font-semibold">Request app access</span>
+                  </div>
+                </div>
+
+                {/* Bottom card - Compliance Checker (partially visible) */}
+                <div className="absolute left-[30px] top-[162px] bg-white rounded-lg shadow-xl p-3 w-[383px]">
+                  <div className="flex gap-3 items-start mb-2">
+                    <div className="size-[74px] rounded-lg bg-teal-200 flex items-center justify-center flex-shrink-0">
+                      <ShieldCheck className="size-8" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-serif text-xl tracking-tight truncate">Compliance Checker</div>
+                      <div className="text-xs text-muted-foreground">2 skills</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <span className="px-2 py-0.5 bg-secondary rounded-md text-xs font-semibold">Verify I-9</span>
+                    <span className="px-2 py-0.5 bg-secondary rounded-md text-xs font-semibold">Review docs</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Close button */}
+              <button
+                onClick={() => setShowEducationBanner(false)}
+                className="p-2 rounded-md hover:bg-muted transition-colors flex-shrink-0"
+                aria-label="Dismiss"
+              >
+                <X className="size-4" />
+              </button>
             </div>
           </div>
         )}
@@ -443,7 +443,7 @@ export default function AgentsPage() {
             <AgentsTable
               agents={filteredAgents}
               onAgentClick={handleAgentClick}
-              onEdit={(agent) => navigate(`/agents/${agent.id}/edit`)}
+              onEdit={(agent) => navigate(`/agents/${agent.id}`)}
               onDelete={handleDeleteClick}
             />
           </div>

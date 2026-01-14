@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   ArrowLeft, HelpCircle, Send, Check, Play, Clock, FileText, Workflow, MessageSquare,
-  Upload, Link2, Search, X, Sparkles, Plus, Trash2, Squirrel, ChevronDown, Copy, Brain,
+  Upload, Link2, Search, X, Sparkles, Plus, Trash2, Squirrel, ChevronDown, Brain,
   RotateCcw,
   // Icon picker icons
   ShieldCheck, TrendingUp, BookOpen, ClipboardList, LineChart, Briefcase, Users,
@@ -358,6 +358,7 @@ export default function AgentBuilderPage() {
 
   // Publish modal state
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showUnpublishModal, setShowUnpublishModal] = useState(false);
 
   // Workflow picker state
   const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false);
@@ -1466,18 +1467,6 @@ export default function AgentBuilderPage() {
     });
   };
 
-  const handleDuplicate = () => {
-    // Navigate to create page with duplicated config
-    navigate("/agents/create", {
-      state: {
-        agentName: `${config.name} (Copy)`,
-        duplicatedConfig: {
-          ...config,
-          name: `${config.name} (Copy)`,
-        },
-      },
-    });
-  };
 
   const handleSendMessage = () => {
     if (!inputValue.trim() || isTyping || showConfirmButtons) return;
@@ -1715,15 +1704,29 @@ export default function AgentBuilderPage() {
             <HelpCircle className="size-4" />
             How agent builder works
           </Button>
-          {isEditing && (
-            <Button variant="outline" className="gap-2" onClick={handleDuplicate}>
-              <Copy className="size-4" />
-              Duplicate
+          {isEditing ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setShowUnpublishModal(true)}
+              >
+                Unpublish
+              </Button>
+              <Button
+                onClick={() => {
+                  // Save changes for published agent - auto-save handles the actual save
+                  console.log("Manual save triggered:", config);
+                }}
+                disabled={!isDirty}
+              >
+                Save changes
+              </Button>
+            </>
+          ) : (
+            <Button onClick={handlePublish} disabled={!config.name || (!config.instructions && !config.description)}>
+              Publish
             </Button>
           )}
-          <Button onClick={handlePublish} disabled={!config.name || (!config.instructions && !config.description)}>
-            Publish
-          </Button>
         </div>
       </header>
 
@@ -3208,6 +3211,73 @@ export default function AgentBuilderPage() {
               <Button onClick={handleConfirmPublish} className="flex-1">
                 <Check className="size-4 mr-1.5" />
                 Publish
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unpublish Confirmation Modal */}
+      {showUnpublishModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowUnpublishModal(false)}
+          />
+          {/* Modal */}
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-8 space-y-6">
+            {/* Close button */}
+            <button
+              onClick={() => setShowUnpublishModal(false)}
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-5" />
+            </button>
+
+            {/* Centered icon and title */}
+            <div className="flex flex-col items-center text-center pt-2">
+              <div className={cn(
+                "size-20 rounded-2xl flex items-center justify-center mb-4 bg-amber-100"
+              )}>
+                <Clock className="size-10 text-amber-600" />
+              </div>
+              <h2 className="text-xl font-semibold mb-1">Unpublish this agent?</h2>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                <span className="font-medium text-foreground">{config.name}</span> will no longer be available to users. You can republish it anytime.
+              </p>
+            </div>
+
+            {/* Warning info */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
+              <p className="text-sm text-amber-800 font-medium">What happens when you unpublish:</p>
+              <ul className="text-sm text-amber-700 space-y-1.5 ml-4 list-disc">
+                <li>Users will no longer be able to access this agent</li>
+                <li>Existing conversations will be preserved</li>
+                <li>All configuration and settings will be saved</li>
+              </ul>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowUnpublishModal(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  console.log("Unpublishing agent:", config.name);
+                  setShowUnpublishModal(false);
+                  // Navigate back to agents page
+                  navigate("/agents");
+                }}
+                className="flex-1"
+              >
+                Unpublish
               </Button>
             </div>
           </div>

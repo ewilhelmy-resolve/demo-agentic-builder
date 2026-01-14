@@ -167,6 +167,38 @@ const MOCK_AGENTS: Record<string, AgentConfig> = {
     knowledgeSources: [],
     skills: ["Password Reset"],
   },
+  "4": {
+    id: "4",
+    name: "PTO Balance Checker",
+    description: "Checks employee time off balances",
+    instructions: "Help employees check their PTO balances and request time off. Be helpful and accurate with dates.",
+    iconId: "calendar",
+    iconColorId: "indigo",
+    agentType: "answer",
+    status: "published",
+    conversationStarters: ["How much PTO do I have?", "I want to request time off", "What are the PTO policies?"],
+    knowledgeSources: [
+      { id: "6", name: "HR Time Off Policies", type: "document" },
+      { id: "7", name: "Holiday Calendar 2025", type: "document" },
+    ],
+    skills: ["Check PTO balance", "Request time off"],
+  },
+  "5": {
+    id: "5",
+    name: "Employee Directory Bot",
+    description: "Looks up employee information",
+    instructions: "Help users find employee contact information and organizational details. Respect privacy guidelines.",
+    iconId: "users",
+    iconColorId: "emerald",
+    agentType: "knowledge",
+    status: "published",
+    conversationStarters: ["Find John Smith's email", "Who is the head of Engineering?", "What's Sarah's phone number?"],
+    knowledgeSources: [
+      { id: "8", name: "Employee Directory", type: "connection" },
+      { id: "9", name: "Org Chart", type: "document" },
+    ],
+    skills: ["Lookup employee", "Find department", "Get contact info"],
+  },
 };
 
 interface KnowledgeSource {
