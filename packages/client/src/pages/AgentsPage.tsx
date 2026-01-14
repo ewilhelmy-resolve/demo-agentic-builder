@@ -10,7 +10,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import RitaLayout from "@/components/layouts/RitaLayout";
-import { AgentCard } from "@/components/agents/AgentCard";
 import { AgentsTable, type Agent } from "@/components/agents/AgentsTable";
 import { CreateAgentDialog } from "@/components/agents/CreateAgentDialog";
 import { AgentTemplateModal, type AgentTemplate } from "@/components/agents/AgentTemplateModal";
@@ -28,69 +27,17 @@ import {
 import {
   Plus,
   ChevronDown,
-  Squirrel,
-  Stamp,
-  RectangleEllipsis,
-  Bot,
   Headphones,
   ShieldCheck,
-  Key,
   FileText,
   Sparkles,
-  type LucideIcon,
+  BookOpen,
+  Zap,
+  Link2,
+  ArrowRight,
+  X,
 } from "lucide-react";
 
-// Icon mapping for dynamic icon rendering
-const ICON_MAP: Record<string, LucideIcon> = {
-  squirrel: Squirrel,
-  stamp: Stamp,
-  "rectangle-ellipsis": RectangleEllipsis,
-  bot: Bot,
-  headphones: Headphones,
-  "shield-check": ShieldCheck,
-  key: Key,
-};
-
-// Color mapping for icon backgrounds
-const ICON_COLOR_MAP: Record<string, string> = {
-  slate: "bg-slate-800",
-  blue: "bg-blue-600",
-  emerald: "bg-emerald-600",
-  purple: "bg-purple-600",
-  orange: "bg-orange-500",
-  rose: "bg-rose-500",
-};
-
-// Mock data for recent agents
-const recentAgents = [
-  {
-    id: "1",
-    name: "HelpDesk Advisor",
-    description: "Answers IT support questions",
-    status: "published" as const,
-    icon: Headphones,
-    iconBgColor: "bg-blue-100",
-    skills: ["Reset password", "Unlock account", "Request system access"],
-  },
-  {
-    id: "2",
-    name: "Onboarding Compliance Checker",
-    description: "Answers from compliance docs",
-    status: "published" as const,
-    icon: ShieldCheck,
-    iconBgColor: "bg-emerald-100",
-    skills: ["Verify I-9 forms", "Check background status", "Review tax docs"],
-  },
-  {
-    id: "3",
-    name: "Password Reset Bot",
-    description: "Automates password resets",
-    status: "draft" as const,
-    icon: Key,
-    iconBgColor: "bg-purple-100",
-    skills: ["Password Reset"],
-  },
-];
 
 // Mock data for agents table
 const mockAgents: Agent[] = [
@@ -146,7 +93,7 @@ const mockAgents: Agent[] = [
   },
 ];
 
-type FilterType = "all" | "published" | "draft";
+type FilterStatus = "all" | "published" | "draft";
 type FilterOwner = "all" | "me" | "others";
 
 interface PublishedAgentState {
@@ -158,31 +105,21 @@ interface PublishedAgentState {
   iconColorId: string;
 }
 
-interface RecentAgent {
-  id: string;
-  name: string;
-  description: string;
-  status: "draft" | "published";
-  icon: LucideIcon;
-  iconBgColor: string;
-  skills?: string[];
-}
 
 export default function AgentsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState<FilterType>("all");
   const [ownerFilter, setOwnerFilter] = useState<FilterOwner>("all");
-  const [statusFilter, setStatusFilter] = useState<FilterType>("all");
+  const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
+  const [showEducationBanner, setShowEducationBanner] = useState(true);
 
   // Dynamic agents list (includes newly published agents)
   const [agents, setAgents] = useState<Agent[]>(mockAgents);
-  const [dynamicRecentAgents, setDynamicRecentAgents] = useState<RecentAgent[]>(recentAgents);
 
   // Handle newly published agent from navigation state
   useEffect(() => {
@@ -218,21 +155,6 @@ export default function AgentsPage() {
           }),
         };
         return [newAgent, ...prev];
-      });
-
-      // Add to recent agents (at the front, keep max 3)
-      setDynamicRecentAgents((prev) => {
-        const newRecent: RecentAgent = {
-          id: published.id,
-          name: published.name,
-          description: published.description,
-          status: "published",
-          icon: ICON_MAP[published.iconId] || Squirrel,
-          iconBgColor: ICON_COLOR_MAP[published.iconColorId] || "bg-slate-100",
-        };
-        // Remove if already exists, add to front, keep max 3
-        const filtered = prev.filter((a) => a.id !== published.id);
-        return [newRecent, ...filtered].slice(0, 3);
       });
 
       // Clear the state to prevent re-adding on refresh
@@ -286,14 +208,6 @@ export default function AgentsPage() {
     }
   };
 
-  const handleRecentAgentClick = (agentId: string, status: "draft" | "published") => {
-    if (status === "published") {
-      navigate(`/agents/${agentId}/chat`);
-    } else {
-      navigate(`/agents/${agentId}`);
-    }
-  };
-
   const handleDeleteClick = (agent: Agent) => {
     setAgentToDelete(agent);
     setDeleteModalOpen(true);
@@ -304,9 +218,6 @@ export default function AgentsPage() {
 
     // Remove from agents list
     setAgents((prev) => prev.filter((a) => a.id !== agentToDelete.id));
-
-    // Remove from recent agents if present
-    setDynamicRecentAgents((prev) => prev.filter((a) => a.id !== agentToDelete.id));
 
     // Reset state
     setAgentToDelete(null);
@@ -347,64 +258,117 @@ export default function AgentsPage() {
           </DropdownMenu>
         </div>
 
-        {/* Main content card */}
-        <div className="bg-white border border-neutral-100 rounded-lg p-5 flex flex-col gap-8">
-          {/* Recent agents section */}
-          <div className="flex flex-col gap-2">
-            <h2 className="text-lg font-normal text-foreground">
-              Recent agents
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {dynamicRecentAgents.map((agent) => (
-                <AgentCard
-                  key={agent.id}
-                  name={agent.name}
-                  description={agent.description}
-                  status={agent.status}
-                  icon={agent.icon}
-                  iconBgColor={agent.iconBgColor}
-                  skills={agent.skills}
-                  onClick={() => handleRecentAgentClick(agent.id, agent.status)}
-                />
-              ))}
+        {/* Education banner */}
+        {showEducationBanner && (
+          <div className="bg-muted/50 border border-border rounded-xl p-8 relative overflow-hidden">
+            {/* Close button */}
+            <button
+              onClick={() => setShowEducationBanner(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-muted transition-colors"
+              aria-label="Dismiss"
+            >
+              <X className="size-4 text-muted-foreground" />
+            </button>
+
+            <div className="flex gap-8 items-center">
+              {/* Left content */}
+              <div className="flex-1 max-w-2xl">
+                <h2 className="text-2xl font-semibold tracking-tight mb-3">
+                  Build intelligent agents for your team
+                </h2>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  Create AI-powered agents that answer questions from your knowledge base,
+                  automate workflows, and help your team be more productive. Connect to your
+                  existing tools and let agents handle repetitive tasks.
+                </p>
+
+                {/* Action links */}
+                <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+                  <button
+                    onClick={() => {/* TODO: link to docs */}}
+                    className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors text-left"
+                  >
+                    <BookOpen className="size-4" />
+                    How to create an agent
+                  </button>
+                  <button
+                    onClick={() => {/* TODO: link to docs */}}
+                    className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors text-left"
+                  >
+                    <Zap className="size-4" />
+                    Adding skills to your agent
+                  </button>
+                  <button
+                    onClick={() => {/* TODO: link to docs */}}
+                    className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors text-left"
+                  >
+                    <Link2 className="size-4" />
+                    Connecting knowledge sources
+                  </button>
+                  <button
+                    onClick={() => setTemplateModalOpen(true)}
+                    className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors text-left"
+                  >
+                    <ArrowRight className="size-4" />
+                    Browse templates
+                  </button>
+                </div>
+              </div>
+
+              {/* Right illustration - stylized agent preview */}
+              <div className="hidden lg:block w-[320px] flex-shrink-0">
+                <div className="relative">
+                  {/* Decorative background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-purple-50 to-teal-100 rounded-xl" />
+
+                  {/* Mock agent card preview */}
+                  <div className="relative p-4">
+                    <div className="bg-white rounded-lg shadow-lg p-4 transform rotate-2 mb-2">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="size-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                          <Headphones className="size-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm">HelpDesk Advisor</div>
+                          <div className="text-xs text-muted-foreground">3 skills</div>
+                        </div>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <span className="px-2 py-0.5 bg-muted rounded text-[10px]">Reset password</span>
+                        <span className="px-2 py-0.5 bg-muted rounded text-[10px]">Unlock account</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-lg shadow-md p-4 transform -rotate-1 ml-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="size-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                          <ShieldCheck className="size-5 text-emerald-600" />
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm">Compliance Checker</div>
+                          <div className="text-xs text-muted-foreground">2 skills</div>
+                        </div>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <span className="px-2 py-0.5 bg-muted rounded text-[10px]">Verify I-9</span>
+                        <span className="px-2 py-0.5 bg-muted rounded text-[10px]">Review docs</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+        )}
+
+        {/* Main content card */}
+        <div className="bg-white border border-neutral-100 rounded-lg p-5 flex flex-col gap-8">
 
           {/* Filters and table */}
           <div className="flex flex-col gap-2">
             {/* Filter row */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {/* Type filter */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" className="gap-2">
-                      Type: {typeFilter}
-                      <ChevronDown className="size-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuCheckboxItem
-                      checked={typeFilter === "all"}
-                      onCheckedChange={() => setTypeFilter("all")}
-                    >
-                      All
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={typeFilter === "published"}
-                      onCheckedChange={() => setTypeFilter("published")}
-                    >
-                      Published
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem
-                      checked={typeFilter === "draft"}
-                      onCheckedChange={() => setTypeFilter("draft")}
-                    >
-                      Draft
-                    </DropdownMenuCheckboxItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
                 {/* Owner filter */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -481,7 +445,6 @@ export default function AgentsPage() {
               onAgentClick={handleAgentClick}
               onEdit={(agent) => navigate(`/agents/${agent.id}/edit`)}
               onDelete={handleDeleteClick}
-              onDuplicate={(agent) => console.log("Duplicate", agent)}
             />
           </div>
         </div>

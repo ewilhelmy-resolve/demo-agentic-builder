@@ -28,6 +28,7 @@ import {
 import {
   ArrowLeft, HelpCircle, Send, Check, Play, Clock, FileText, Workflow, MessageSquare,
   Upload, Link2, Search, X, Sparkles, Plus, Trash2, Squirrel, ChevronDown, Copy, Brain,
+  RotateCcw,
   // Icon picker icons
   ShieldCheck, TrendingUp, BookOpen, ClipboardList, LineChart, Briefcase, Users,
   Landmark, Truck, Key, Award, Settings, AlertCircle, Rocket, Bot, Headphones,
@@ -473,6 +474,16 @@ export default function AgentBuilderPage() {
   const generateTestResponse = (userInput: string): string => {
     const input = userInput.toLowerCase();
 
+    // Check if agent has minimal config
+    const hasSkills = config.workflows.length > 0;
+    const hasKnowledge = config.knowledgeSources.length > 0;
+    const hasInstructions = config.instructions && config.instructions.trim().length > 0;
+
+    // Nudge: No skills and no knowledge configured
+    if (!hasSkills && !hasKnowledge && !hasInstructions) {
+      return `I'd love to help, but I don't have any skills or knowledge configured yet.\n\n**To get me working:**\n• Add **Skills** to let me perform actions\n• Add **Knowledge** sources so I can answer questions\n• Write **Instructions** to define how I behave\n\nConfigure me in the panel on the left!`;
+    }
+
     // Check guardrails first
     for (const guardrail of config.guardrails) {
       if (guardrail && input.includes(guardrail.toLowerCase())) {
@@ -482,11 +493,11 @@ export default function AgentBuilderPage() {
 
     // Meta questions about finding/adding skills
     if (input.includes("find skill") || input.includes("add skill") || input.includes("more skill") || input.includes("what skill") || input.includes("need skill") || input.includes("skills to add")) {
-      const currentSkills = config.workflows.length > 0
+      const currentSkills = hasSkills
         ? `**Current skills:**\n${config.workflows.map(s => `• ${s}`).join("\n")}\n\n`
         : "";
 
-      return `${currentSkills}**Suggested skills for ${config.name || "this agent"}:**\n• Check VPN status\n• Submit IT ticket\n• Software installation request\n• Hardware replacement request\n• Email configuration help\n\n**To add skills:**\n1. Exit test mode\n2. Click "+ Add skill" in the Skills section\n3. Browse available skills or search\n4. Select skills and click "Add"\n\nSkills give your agent capabilities like running workflows, accessing systems, or performing actions.`;
+      return `${currentSkills}**Suggested skills for ${config.name || "this agent"}:**\n• Check VPN status\n• Submit IT ticket\n• Software installation request\n• Hardware replacement request\n• Email configuration help\n\n**To add skills:**\n1. Click "+ Add skill" in Configure\n2. Browse or search available skills\n3. Select and add`;
     }
 
     // Check if this matches any of the agent's skills/workflows
@@ -522,12 +533,17 @@ export default function AgentBuilderPage() {
     }
 
     // Generic skill-based response if agent has skills but no specific match
-    if (config.workflows.length > 0) {
+    if (hasSkills) {
       return `I'm ${config.name || "your assistant"}, and I can help you with:\n\n${config.workflows.map(s => `• ${s}`).join("\n")}\n\nBased on your message, it looks like you might need help with one of these. Could you tell me more specifically what you need?`;
     }
 
-    // Default answer agent response
-    return `Thanks for your question about "${userInput}"\n\nAs ${config.role || "your assistant"}, I'm here to help with ${config.responsibilities || "your questions"}.\n\n[This is a simulated test response. In production, the agent would provide real answers based on the configured knowledge sources and instructions.]`;
+    // Knowledge-based response
+    if (hasKnowledge) {
+      return `I can help answer questions based on my knowledge sources:\n\n${config.knowledgeSources.slice(0, 3).map(s => `• ${s}`).join("\n")}${config.knowledgeSources.length > 3 ? `\n• ...and ${config.knowledgeSources.length - 3} more` : ""}\n\nCould you be more specific about what you'd like to know?`;
+    }
+
+    // Default response with instructions
+    return `Thanks for your question about "${userInput}"\n\nAs ${config.name || "your assistant"}, I'm configured to help based on my instructions.\n\n[This is a preview. In production, I'll provide real answers based on my configuration.]`;
   };
 
   const handleTestKeyDown = (e: React.KeyboardEvent) => {
@@ -1852,9 +1868,43 @@ export default function AgentBuilderPage() {
 
                   {/* Description */}
                   <div>
-                    <Label htmlFor="agent-description" className="text-sm font-medium">
-                      Description
-                    </Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="agent-description" className="text-sm font-medium">
+                        Description
+                      </Label>
+                      {config.name && !config.description && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                          onClick={() => {
+                            // Generate description based on name and skills
+                            const skills = config.workflows;
+                            let suggestion = "";
+
+                            if (skills.length > 0) {
+                              const skillList = skills.slice(0, 3).join(", ").toLowerCase();
+                              suggestion = `Helps users with ${skillList}${skills.length > 3 ? " and more" : ""}. Available 24/7 to assist with common requests and automate routine tasks.`;
+                            } else if (config.name.toLowerCase().includes("it") || config.name.toLowerCase().includes("help")) {
+                              suggestion = "Your go-to assistant for IT support questions, troubleshooting, and service requests. Get quick answers and resolve issues faster.";
+                            } else if (config.name.toLowerCase().includes("hr") || config.name.toLowerCase().includes("people")) {
+                              suggestion = "Helps employees with HR-related questions about policies, benefits, time off, and workplace guidelines.";
+                            } else if (config.name.toLowerCase().includes("sales")) {
+                              suggestion = "Assists the sales team with customer information, deal tracking, and sales process questions.";
+                            } else if (config.name.toLowerCase().includes("finance")) {
+                              suggestion = "Answers questions about expense policies, reimbursements, budgets, and financial processes.";
+                            } else {
+                              suggestion = `Your intelligent assistant for ${config.name.toLowerCase().replace(/agent|assistant|bot|helper/gi, "").trim() || "workplace"} questions and tasks. Ask anything to get started.`;
+                            }
+
+                            setConfig(prev => ({ ...prev, description: suggestion }));
+                          }}
+                        >
+                          <Sparkles className="size-3" />
+                          Generate
+                        </Button>
+                      )}
+                    </div>
                     <Textarea
                       id="agent-description"
                       value={config.description}
@@ -1869,7 +1919,7 @@ export default function AgentBuilderPage() {
 
                 {/* Skills Section - moved up, hidden for knowledge agents */}
                 {config.agentType !== "knowledge" && (
-                  <div className="space-y-4">
+                  <div id="skills-section" className="space-y-4">
                     <div className="flex items-start justify-between">
                       <div>
                         <Label className="text-sm font-medium">Skills</Label>
@@ -1930,31 +1980,71 @@ export default function AgentBuilderPage() {
                   </div>
                 )}
 
-                {/* Instructions Section - only show when skills are added */}
-                {config.workflows.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label htmlFor="instructions" className="text-sm font-medium">
-                          Instructions
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                          Auto-generated from skills
-                        </p>
-                      </div>
+                {/* Instructions Section */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="instructions" className="text-sm font-medium">
+                        Instructions
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {config.workflows.length > 0 ? "Auto-generated from skills" : "Define how your agent behaves"}
+                      </p>
+                    </div>
+                    {config.workflows.length > 0 && (
                       <Button
                         variant="ghost"
                         size="sm"
                         className="h-7 text-xs gap-1"
                         onClick={() => {
-                          // Allow editing by focusing the textarea
                           const textarea = document.getElementById("instructions") as HTMLTextAreaElement;
                           textarea?.focus();
                         }}
                       >
                         Edit
                       </Button>
+                    )}
+                  </div>
+
+                  {/* Empty state when no skills and no instructions */}
+                  {config.workflows.length === 0 && !config.instructions ? (
+                    <div className="border rounded-lg p-4 flex flex-col items-center justify-center text-center min-h-[120px] bg-muted/30">
+                      <FileText className="size-5 text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Add skills to auto-generate instructions, or write your own
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            document.getElementById("skills-section")?.scrollIntoView({ behavior: "smooth" });
+                          }}
+                        >
+                          Browse skills
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => {
+                            setConfig((prev) => ({
+                              ...prev,
+                              instructions: `# ${prev.name || "Agent"}\n\n## What you do\nDescribe what this agent helps users with.\n\n## How you work\n1) **Understand** - Ask clarifying questions\n2) **Execute** - Complete the requested task\n3) **Confirm** - Verify success\n\n## Important notes\n- Add any guidelines or restrictions here`,
+                            }));
+                            setTimeout(() => {
+                              const textarea = document.getElementById("instructions") as HTMLTextAreaElement;
+                              textarea?.focus();
+                            }, 100);
+                          }}
+                        >
+                          <Plus className="size-3" />
+                          Write manually
+                        </Button>
+                      </div>
                     </div>
+                  ) : (
                     <Textarea
                       id="instructions"
                       value={config.instructions || `# ${config.name || "Agent"}\n\n## What you do\nHelp users with ${config.workflows.slice(0, 2).join(" and ").toLowerCase()}${config.workflows.length > 2 ? ` and ${config.workflows.length - 2} more tasks` : ""}. Guide them through each process step-by-step.\n\n## Skills available\n${config.workflows.map(s => `- ${s}`).join("\n")}\n\n## How you work\n1) **Understand** - Ask clarifying questions to understand the user's needs\n2) **Execute** - Use your skills to complete the requested task\n3) **Confirm** - Verify the task was completed successfully\n\n## Important notes\n- Always verify user identity before performing sensitive actions\n- If unsure, ask for clarification rather than assuming`}
@@ -1963,8 +2053,8 @@ export default function AgentBuilderPage() {
                       }
                       className="min-h-[200px] resize-none text-sm font-mono"
                     />
-                  </div>
-                )}
+                  )}
+                </div>
 
                 {/* Knowledge Section */}
                 <div className="space-y-4">
@@ -2166,76 +2256,75 @@ export default function AgentBuilderPage() {
                   </div>
 
                   {/* Combined input with tags inside */}
-                  <div className="border rounded-lg p-2 min-h-[80px] focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-                    <div className="flex flex-wrap gap-1.5 mb-2">
-                      {/* Added starters */}
-                      {config.conversationStarters.map((starter, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center gap-1 pl-2.5 pr-1 py-1 bg-muted rounded-full text-xs"
-                        >
-                          <span>{starter}</span>
-                          <button
-                            onClick={() => {
-                              const updated = config.conversationStarters.filter((_, i) => i !== index);
-                              setConfig((prev) => ({ ...prev, conversationStarters: updated }));
-                            }}
-                            className="size-4 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+                  <div className="border rounded-lg p-3 min-h-[80px] focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                      {(config.conversationStarters.length > 0 || config.workflows.length > 0) && (
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {/* Added starters */}
+                          {config.conversationStarters.map((starter, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-1 pl-2.5 pr-1 py-1 bg-muted rounded-full text-xs"
                           >
-                            <X className="size-3" />
-                          </button>
-                        </div>
-                      ))}
-                      {/* Suggestion tags */}
-                      {config.conversationStarters.length < 6 && (() => {
-                        const suggestions: string[] = [];
-                        config.workflows.forEach((skillName) => {
-                          const skill = AVAILABLE_SKILLS.find(s => s.name === skillName);
-                          if (skill?.starters) {
-                            suggestions.push(...skill.starters);
-                          }
-                        });
-                        if (suggestions.length === 0) {
-                          suggestions.push("How can you help me?", "What can you do?", "I have a question about...");
-                        }
-                        return suggestions
-                          .filter((s) => !config.conversationStarters.includes(s))
-                          .slice(0, 4)
-                          .map((suggestion) => (
+                            <span>{starter}</span>
                             <button
-                              key={suggestion}
-                              onClick={() =>
-                                setConfig((prev) => ({
-                                  ...prev,
-                                  conversationStarters: [...prev.conversationStarters, suggestion],
-                                }))
-                              }
-                              className="flex items-center gap-1 pl-2 pr-2.5 py-1 text-xs border border-dashed rounded-full text-muted-foreground hover:text-foreground hover:border-solid hover:bg-muted/50 transition-colors"
+                              onClick={() => {
+                                const updated = config.conversationStarters.filter((_, i) => i !== index);
+                                setConfig((prev) => ({ ...prev, conversationStarters: updated }));
+                              }}
+                              className="size-4 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
                             >
-                              <Plus className="size-3" />
-                              {suggestion}
+                              <X className="size-3" />
                             </button>
-                          ));
-                      })()}
+                          </div>
+                        ))}
+                        {/* Suggestion tags from skills (max 3 suggestions shown) */}
+                        {config.conversationStarters.length < 6 && (() => {
+                          const suggestions: string[] = [];
+                          config.workflows.forEach((skillName) => {
+                            const skill = AVAILABLE_SKILLS.find(s => s.name === skillName);
+                            if (skill?.starters) {
+                              suggestions.push(...skill.starters);
+                            }
+                          });
+                          return suggestions
+                            .filter((s) => !config.conversationStarters.includes(s))
+                            .slice(0, 3)
+                            .map((suggestion) => (
+                              <button
+                                key={suggestion}
+                                onClick={() =>
+                                  setConfig((prev) => ({
+                                    ...prev,
+                                    conversationStarters: [...prev.conversationStarters, suggestion],
+                                  }))
+                                }
+                                className="flex items-center gap-1 pl-2 pr-2.5 py-1 text-xs border border-dashed rounded-full text-muted-foreground hover:text-foreground hover:border-solid hover:bg-muted/50 transition-colors"
+                              >
+                                <Plus className="size-3" />
+                                {suggestion}
+                              </button>
+                              ));
+                          })()}
+                        </div>
+                      )}
+                      {config.conversationStarters.length < 6 && (
+                        <input
+                          type="text"
+                          placeholder="Type to add your own..."
+                          className="w-full text-sm bg-transparent outline-none placeholder:text-muted-foreground py-1"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && e.currentTarget.value.trim()) {
+                              e.preventDefault();
+                              setConfig((prev) => ({
+                                ...prev,
+                                conversationStarters: [...prev.conversationStarters, e.currentTarget.value.trim()],
+                              }));
+                              e.currentTarget.value = "";
+                            }
+                          }}
+                        />
+                      )}
                     </div>
-                    {config.conversationStarters.length < 6 && (
-                      <input
-                        type="text"
-                        placeholder="Type to add your own..."
-                        className="w-full text-sm bg-transparent outline-none placeholder:text-muted-foreground"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && e.currentTarget.value.trim()) {
-                            e.preventDefault();
-                            setConfig((prev) => ({
-                              ...prev,
-                              conversationStarters: [...prev.conversationStarters, e.currentTarget.value.trim()],
-                            }));
-                            e.currentTarget.value = "";
-                          }
-                        }}
-                      />
-                    )}
-                  </div>
                   <span className="text-xs text-muted-foreground">
                     {config.conversationStarters.length}/6
                   </span>
@@ -2469,125 +2558,187 @@ export default function AgentBuilderPage() {
           )}
         </div>
 
-        {/* Right panel - Preview */}
+        {/* Right panel - Preview (interactive) */}
         <div className="w-[400px] flex flex-col bg-white rounded-xl">
           <div className="p-4 border-b flex items-center justify-between">
-            <h2 className="font-medium">Preview</h2>
-            {(step === "done" || (config.name && (config.instructions || config.description))) && (
+            <div>
+              <h2 className="font-medium">Preview</h2>
+              <p className="text-xs text-muted-foreground">Try chatting with your agent</p>
+            </div>
+            {testMessages.length > 0 && (
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="gap-1.5"
-                onClick={() => setShowTestModal(true)}
+                className="h-7 text-xs gap-1"
+                onClick={() => {
+                  setTestMessages([]);
+                  setTestInput("");
+                }}
               >
-                <Play className="size-3.5" />
-                Test agent
+                <RotateCcw className="size-3" />
+                Reset
               </Button>
             )}
           </div>
           <div className="flex-1 p-4 flex flex-col overflow-y-auto">
-            {/* Centered content wrapper */}
-            <div className="flex-1 flex flex-col justify-center">
-            {/* Agent icon and name */}
-            <div className="flex items-center gap-3 mb-3">
-              <div className={cn(
-                "size-12 rounded-xl flex items-center justify-center flex-shrink-0",
-                ICON_COLORS.find(c => c.id === config.iconColorId)?.bg || "bg-slate-800"
-              )}>
-                {(() => {
-                  const iconData = AVAILABLE_ICONS.find(i => i.id === config.iconId);
-                  const IconComponent = iconData?.icon || Bot;
-                  return <IconComponent className="size-6 text-white" />;
-                })()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-medium truncate">{config.name || "Untitled Agent"}</h3>
-                {config.agentType && (
-                  <span className="text-xs text-muted-foreground">
-                    {AGENT_TYPE_INFO[config.agentType].shortLabel}
-                  </span>
+            {/* Empty state - show when no messages */}
+            {testMessages.length === 0 ? (
+              <div className="flex-1 flex flex-col justify-center">
+                {/* Agent icon and name */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={cn(
+                    "size-12 rounded-xl flex items-center justify-center flex-shrink-0",
+                    ICON_COLORS.find(c => c.id === config.iconColorId)?.bg || "bg-slate-800"
+                  )}>
+                    {(() => {
+                      const iconData = AVAILABLE_ICONS.find(i => i.id === config.iconId);
+                      const IconComponent = iconData?.icon || Bot;
+                      return <IconComponent className="size-6 text-white" />;
+                    })()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-medium truncate">{config.name || "Untitled Agent"}</h3>
+                    {config.agentType && (
+                      <span className="text-xs text-muted-foreground">
+                        {AGENT_TYPE_INFO[config.agentType].shortLabel}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Description */}
+                {config.description && (
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                    {config.description}
+                  </p>
                 )}
-              </div>
-            </div>
 
-            {/* Description */}
-            {config.description && (
-              <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                {config.description}
-              </p>
-            )}
-
-            {/* Conversation starters / Triggers */}
-            {config.conversationStarters.some(s => s.trim()) && (
-              <div className="space-y-2 mb-4">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Try asking
-                </p>
-                <div className="space-y-1.5">
-                  {config.conversationStarters
-                    .filter(s => s.trim())
-                    .slice(0, 4)
-                    .map((starter, index) => (
-                      <button
-                        key={index}
-                        onClick={() => {
-                          setShowTestModal(true);
-                          // Add the starter as first user message after a brief delay
-                          setTimeout(() => {
-                            setTestMessages([
-                              {
-                                id: "welcome",
-                                role: "assistant",
-                                content: `Hi! I'm ${config.name || "your agent"}. ${config.description || "How can I help you today?"}`,
-                              },
-                              {
-                                id: `user-${Date.now()}`,
+                {/* Conversation starters / Triggers */}
+                {config.conversationStarters.some(s => s.trim()) && (
+                  <div className="space-y-2 mb-4">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Try asking
+                    </p>
+                    <div className="space-y-1.5">
+                      {config.conversationStarters
+                        .filter(s => s.trim())
+                        .slice(0, 4)
+                        .map((starter, index) => (
+                          <button
+                            key={index}
+                            onClick={() => {
+                              // Send the starter as user message directly
+                              const userMessage: Message = {
+                                id: `test-user-${Date.now()}`,
                                 role: "user",
                                 content: starter,
-                              },
-                            ]);
-                            // Simulate agent response
-                            setTimeout(() => {
-                              setTestMessages(prev => [
-                                ...prev,
-                                {
-                                  id: `agent-${Date.now()}`,
-                                  role: "assistant",
-                                  content: `I understand you're asking about "${starter}". Based on my configuration, I would help you with this request using ${config.agentType === "workflow" ? "the connected workflows" : config.agentType === "knowledge" ? "my knowledge base" : "company knowledge"}. This is a preview of how I'll respond.`,
-                                },
-                              ]);
-                            }, 1000);
-                          }, 100);
-                        }}
-                        className="w-full text-left px-3 py-2 text-sm border rounded-lg hover:bg-primary/5 hover:border-primary/30 transition-colors truncate cursor-pointer"
-                      >
-                        {starter}
-                      </button>
-                    ))}
-                </div>
+                              };
+                              setTestMessages([userMessage]);
+                              // Simulate response
+                              setIsTestTyping(true);
+                              setTimeout(() => {
+                                const response = generateTestResponse(starter);
+                                setTestMessages(prev => [
+                                  ...prev,
+                                  {
+                                    id: `test-assistant-${Date.now()}`,
+                                    role: "assistant",
+                                    content: response,
+                                  },
+                                ]);
+                                setIsTestTyping(false);
+                              }, 1000 + Math.random() * 500);
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm border rounded-lg hover:bg-primary/5 hover:border-primary/30 transition-colors truncate cursor-pointer"
+                          >
+                            {starter}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Status indicator - only show when not configured */}
+                {!config.description && !config.conversationStarters.some(s => s.trim()) && (
+                  <div className="flex items-center justify-center gap-2 px-3 py-2.5 bg-muted/50 rounded-lg text-sm text-muted-foreground mt-4">
+                    <Clock className="size-4" />
+                    <span>Configure your agent to see preview</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Chat messages - show when there are messages */
+              <div className="flex-1 space-y-4">
+                {testMessages.map((message) => (
+                  <div key={message.id} className={cn(
+                    "flex gap-3",
+                    message.role === "user" && "justify-end"
+                  )}>
+                    {message.role === "assistant" ? (
+                      <>
+                        <div className={cn(
+                          "size-8 rounded-full flex items-center justify-center flex-shrink-0",
+                          ICON_COLORS.find(c => c.id === config.iconColorId)?.bg || "bg-slate-800"
+                        )}>
+                          {(() => {
+                            const iconData = AVAILABLE_ICONS.find(i => i.id === config.iconId);
+                            const IconComponent = iconData?.icon || Bot;
+                            return <IconComponent className="size-4 text-white" />;
+                          })()}
+                        </div>
+                        <div className="flex-1 max-w-[85%]">
+                          <p className="text-sm whitespace-pre-wrap">
+                            {renderMessageContent(message.content)}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-3 py-2 max-w-[85%]">
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {/* Typing indicator */}
+                {isTestTyping && (
+                  <div className="flex gap-3">
+                    <div className={cn(
+                      "size-8 rounded-full flex items-center justify-center flex-shrink-0",
+                      ICON_COLORS.find(c => c.id === config.iconColorId)?.bg || "bg-slate-800"
+                    )}>
+                      {(() => {
+                        const iconData = AVAILABLE_ICONS.find(i => i.id === config.iconId);
+                        const IconComponent = iconData?.icon || Bot;
+                        return <IconComponent className="size-4 text-white" />;
+                      })()}
+                    </div>
+                    <div className="flex gap-1 items-center py-2">
+                      <span className="size-2 bg-muted-foreground/50 rounded-full animate-bounce" />
+                      <span className="size-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
+                      <span className="size-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
+                    </div>
+                  </div>
+                )}
+                <div ref={testMessagesEndRef} />
               </div>
             )}
 
-              {/* Status indicator - only show when not configured */}
-              {!config.description && !config.conversationStarters.some(s => s.trim()) && (
-                <div className="flex items-center justify-center gap-2 px-3 py-2.5 bg-muted/50 rounded-lg text-sm text-muted-foreground mt-4">
-                  <Clock className="size-4" />
-                  <span>Configure your agent to see preview</span>
-                </div>
-              )}
-            </div>
-
-            {/* Chat input preview */}
-            <div className="mt-auto">
+            {/* Chat input - always enabled */}
+            <div className="mt-auto pt-4">
               <div className="relative">
                 <Textarea
+                  value={testInput}
+                  onChange={(e) => setTestInput(e.target.value)}
+                  onKeyDown={handleTestKeyDown}
                   placeholder="Ask anything..."
                   className="min-h-[60px] pr-12 resize-none rounded-xl border-muted-foreground/20 text-sm"
-                  disabled
+                  disabled={isTestTyping}
                 />
                 <Button
                   size="icon"
-                  disabled
+                  onClick={handleTestSendMessage}
+                  disabled={!testInput.trim() || isTestTyping}
                   aria-label="Send message"
                   className="absolute bottom-2 right-2 size-7 rounded-lg"
                 >

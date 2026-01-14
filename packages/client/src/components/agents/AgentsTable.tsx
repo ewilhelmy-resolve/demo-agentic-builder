@@ -3,7 +3,6 @@
  *
  * Features:
  * - Sortable columns (status, updated by, owner, last updated)
- * - Row selection with checkboxes
  * - Avatar display for updated by / owner
  * - Status badges
  * - Action menu
@@ -18,7 +17,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -54,7 +52,6 @@ interface AgentsTableProps {
   onAgentClick?: (agent: Agent) => void;
   onEdit?: (agent: Agent) => void;
   onDelete?: (agent: Agent) => void;
-  onDuplicate?: (agent: Agent) => void;
 }
 
 type SortField = "status" | "updatedBy" | "owner" | "lastUpdated";
@@ -73,29 +70,9 @@ export function AgentsTable({
   onAgentClick,
   onEdit,
   onDelete,
-  onDuplicate,
 }: AgentsTableProps) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedIds(new Set(agents.map((a) => a.id)));
-    } else {
-      setSelectedIds(new Set());
-    }
-  };
-
-  const handleSelectOne = (id: string, checked: boolean) => {
-    const newSet = new Set(selectedIds);
-    if (checked) {
-      newSet.add(id);
-    } else {
-      newSet.delete(id);
-    }
-    setSelectedIds(newSet);
-  };
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -132,9 +109,6 @@ export function AgentsTable({
     return sortDirection === "asc" ? comparison : -comparison;
   });
 
-  const allSelected = agents.length > 0 && selectedIds.size === agents.length;
-  const someSelected = selectedIds.size > 0 && selectedIds.size < agents.length;
-
   const SortableHeader = ({
     field,
     children,
@@ -163,16 +137,7 @@ export function AgentsTable({
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="w-8 pl-3">
-              <Checkbox
-                checked={allSelected}
-                // @ts-expect-error - indeterminate is a valid prop
-                indeterminate={someSelected}
-                onCheckedChange={handleSelectAll}
-                aria-label="Select all agents"
-              />
-            </TableHead>
-            <TableHead className="min-w-[250px]">Name</TableHead>
+            <TableHead className="min-w-[250px] pl-4">Name</TableHead>
             <TableHead className="w-[200px]">Skills</TableHead>
             <TableHead className="w-[127px]">
               <SortableHeader field="status">Status</SortableHeader>
@@ -202,19 +167,7 @@ export function AgentsTable({
               className="h-[84px] cursor-pointer"
               onClick={() => onAgentClick?.(agent)}
             >
-              <TableCell
-                className="pl-3"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Checkbox
-                  checked={selectedIds.has(agent.id)}
-                  onCheckedChange={(checked) =>
-                    handleSelectOne(agent.id, checked as boolean)
-                  }
-                  aria-label={`Select ${agent.name}`}
-                />
-              </TableCell>
-              <TableCell>
+              <TableCell className="pl-4">
                 <div className="flex flex-col">
                   <span className="text-primary font-medium truncate">
                     {agent.name}
@@ -299,9 +252,6 @@ export function AgentsTable({
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => onEdit?.(agent)}>
                       Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onDuplicate?.(agent)}>
-                      Duplicate
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => onDelete?.(agent)}
