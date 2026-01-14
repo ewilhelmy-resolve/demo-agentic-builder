@@ -19,6 +19,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   ArrowLeft, HelpCircle, Send, Check, Play, Clock, FileText, Workflow, MessageSquare,
   Upload, Link2, Search, X, Sparkles, Plus, Trash2, Squirrel, ChevronDown, Copy, Brain,
   // Icon picker icons
@@ -289,7 +296,7 @@ export default function AgentBuilderPage() {
   const isDuplicate = !!duplicatedConfig;
 
   // Default to configure tab
-  const [activeTab, setActiveTab] = useState<"configure" | "chat">("configure");
+  const [activeTab, setActiveTab] = useState<"configure" | "access">("configure");
   const [showTestModal, setShowTestModal] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [step, setStep] = useState<ConversationStep>(isEditing || isDuplicate ? "done" : "start");
@@ -357,6 +364,20 @@ export default function AgentBuilderPage() {
 
   // Knowledge picker state
   const [knowledgeSearchQuery, setKnowledgeSearchQuery] = useState("");
+
+  // Access tab state
+  const [accessSearchQuery, setAccessSearchQuery] = useState("");
+  const [showAccessDropdown, setShowAccessDropdown] = useState(false);
+  const [addedAccessItems, setAddedAccessItems] = useState<Array<{
+    id: string;
+    type: "team" | "user";
+    name: string;
+    email?: string;
+    initials?: string;
+    color: string;
+    bgClass: string;
+    textClass: string;
+  }>>([]);
 
   // Create new workflow modal state
   const [showCreateWorkflowModal, setShowCreateWorkflowModal] = useState(false);
@@ -1698,402 +1719,27 @@ export default function AgentBuilderPage() {
           <div className="flex justify-center pt-4 pb-2">
             <Tabs
               value={activeTab}
-              onValueChange={(v) => setActiveTab(v as "configure" | "chat")}
+              onValueChange={(v) => setActiveTab(v as "configure" | "access")}
             >
               <TabsList className="bg-muted/50">
-                <TabsTrigger value="chat" className="px-8">Chat Assistant</TabsTrigger>
                 <TabsTrigger value="configure" className="px-8">Configure</TabsTrigger>
+                <TabsTrigger value="access" className="px-8">Access</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
 
-          {activeTab === "chat" ? (
+          {/* HIDDEN: Chat Assistant Tab - preserved for future AI-contextual features
+          {activeTab === "chat" && (
             <>
-              {/* Chat messages */}
+              {/* Chat messages *}
               <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-                {messages.map((message) => (
-                  <div key={message.id}>
-                    <div
-                      className={cn(
-                        "flex gap-3",
-                        message.role === "user" && "justify-end"
-                      )}
-                    >
-                      {message.role === "assistant" ? (
-                        <div className="max-w-[85%]">
-                          <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                            {renderMessageContent(message.content)}
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="bg-muted rounded-2xl rounded-br-sm px-4 py-2.5 max-w-[80%]">
-                          <p className="text-sm whitespace-pre-wrap">
-                            {message.content}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-                {/* Confirmation buttons */}
-                {showConfirmButtons && !isTyping && (
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleChangeType}>
-                      Change agent type
-                    </Button>
-                    <Button onClick={handleConfirm}>
-                      Yes, continue
-                    </Button>
-                  </div>
-                )}
-
-                {/* Knowledge source buttons */}
-                {showKnowledgeButtons && !isTyping && (
-                  <div className="flex gap-2">
-                    {config.agentType === "answer" && (
-                      <Button variant="outline" onClick={handleSkipKnowledgeSources}>
-                        Skip for now
-                      </Button>
-                    )}
-                    <Button onClick={handleAddKnowledgeSources}>
-                      {config.agentType === "knowledge" ? "Select documents" : "Add knowledge sources"}
-                    </Button>
-                  </div>
-                )}
-
-                {/* Workflow buttons */}
-                {showWorkflowButtons && !isTyping && (
-                  <div className="flex gap-2">
-                    <Button onClick={handleAddWorkflows}>
-                      Connect workflows
-                    </Button>
-                  </div>
-                )}
-
-                {/* Type Selector (new flow) */}
-                {showTypeSelector && !isTyping && (
-                  <div className="space-y-3">
-                    {(["answer", "knowledge", "workflow"] as const).map((type) => {
-                      const typeInfo = AGENT_TYPE_INFO[type];
-                      return (
-                        <label
-                          key={type}
-                          className={cn(
-                            "flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all",
-                            selectedType === type
-                              ? "border-primary ring-1 ring-primary bg-white"
-                              : "border-muted bg-white hover:border-muted-foreground/30"
-                          )}
-                        >
-                          <input
-                            type="radio"
-                            name="agent-type"
-                            checked={selectedType === type}
-                            onChange={() => setSelectedType(type)}
-                            className="mt-1.5"
-                          />
-                          {/* Icon box */}
-                          <div className={cn(
-                            "size-9 rounded-lg flex items-center justify-center flex-shrink-0",
-                            typeInfo.iconBg
-                          )}>
-                            {type === "answer" && <MessageSquare className={cn("size-4", typeInfo.iconColor)} />}
-                            {type === "knowledge" && <BookOpen className={cn("size-4", typeInfo.iconColor)} />}
-                            {type === "workflow" && <Workflow className={cn("size-4", typeInfo.iconColor)} />}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-base">{typeInfo.label}</span>
-                              {type === suggestedType && (
-                                <Badge variant="secondary" className="text-xs">Suggested</Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-foreground mt-0.5">
-                              {typeInfo.shortDesc}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {typeInfo.subDesc}
-                            </p>
-                          </div>
-                        </label>
-                      );
-                    })}
-                    <div className="pt-2">
-                      <Button onClick={handleTypeSelectionConfirm} disabled={!selectedType}>
-                        Continue with {selectedType ? AGENT_TYPE_INFO[selectedType].label : "selection"}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Type Confirmation UI (new flow) */}
-                {showTypeConfirmation && !isTyping && (
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleTypeConfirmationAdjust}>
-                      Adjust
-                    </Button>
-                    <Button onClick={handleTypeConfirmationConfirm}>
-                      Yes, that's correct
-                    </Button>
-                  </div>
-                )}
-
-                {/* Trigger Phrases UI (new flow) */}
-                {showTriggerPhrases && !isTyping && (
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setActiveTab("configure")}>
-                      Edit in Configure
-                    </Button>
-                    <Button onClick={handleTriggerPhrasesConfirm}>
-                      Looks good, continue
-                    </Button>
-                  </div>
-                )}
-
-                {/* Guardrails UI (new flow) */}
-                {showGuardrails && !isTyping && (
-                  <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-                    <Textarea
-                      value={guardrailInput}
-                      onChange={(e) => setGuardrailInput(e.target.value)}
-                      placeholder="e.g., HR policy questions, IT troubleshooting, payroll issues..."
-                      className="min-h-[80px] resize-none"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Separate multiple items with commas or new lines. Type "none" if the agent should handle all related requests.
-                    </p>
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={handleGuardrailsSkip}>
-                        None - handle all
-                      </Button>
-                      <Button onClick={handleGuardrailsSubmit}>
-                        Set boundaries
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Source/Workflow Selector (new flow) */}
-                {showSourceSelector && !isTyping && (
-                  <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
-                    {selectedType === "workflow" ? (
-                      // Workflow selection (single select - cards with search for 5+)
-                      <>
-                        <div className="space-y-1 mb-3">
-                          <p className="text-sm font-medium">
-                            Select the workflow this agent will execute:
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Choose a workflow from your organization's available automations.
-                          </p>
-                        </div>
-
-                        {/* Search input - only show if more than 5 workflows */}
-                        {AVAILABLE_WORKFLOWS.length > 5 && (
-                          <div className="relative mb-3">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                            <Input
-                              placeholder="Search workflows..."
-                              value={sourceSearchQuery}
-                              onChange={(e) => setSourceSearchQuery(e.target.value)}
-                              className="pl-9"
-                            />
-                          </div>
-                        )}
-
-                        {/* Workflow cards */}
-                        <div className={cn(
-                          "space-y-2",
-                          AVAILABLE_WORKFLOWS.length > 5 && "max-h-[280px] overflow-y-auto"
-                        )}>
-                          {AVAILABLE_WORKFLOWS
-                            .filter((workflow) => {
-                              if (!sourceSearchQuery) return true;
-                              const query = sourceSearchQuery.toLowerCase();
-                              return (
-                                workflow.name.toLowerCase().includes(query) ||
-                                workflow.description.toLowerCase().includes(query)
-                              );
-                            })
-                            .map((workflow) => (
-                              <label
-                                key={workflow.id}
-                                className={cn(
-                                  "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
-                                  selectedWorkflows[0] === workflow.id
-                                    ? "border-primary bg-primary/5"
-                                    : "border-transparent bg-white hover:bg-muted/50"
-                                )}
-                              >
-                                <input
-                                  type="radio"
-                                  name="workflow-selection"
-                                  checked={selectedWorkflows[0] === workflow.id}
-                                  onChange={() => setSelectedWorkflows([workflow.id])}
-                                  className="mt-0.5"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <span className="font-medium text-sm">{workflow.name}</span>
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                    {workflow.description}
-                                  </p>
-                                </div>
-                              </label>
-                            ))}
-                        </div>
-
-                        <div className="pt-2">
-                          <Button
-                            onClick={handleSourceSelectionConfirm}
-                            disabled={selectedWorkflows.length === 0}
-                          >
-                            Connect workflow
-                          </Button>
-                        </div>
-                      </>
-                    ) : (
-                      // Knowledge source selection with search
-                      <>
-                        {/* Search input */}
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                          <Input
-                            placeholder="Search knowledge sources..."
-                            value={sourceSearchQuery}
-                            onChange={(e) => setSourceSearchQuery(e.target.value)}
-                            className="pl-9 pr-9"
-                          />
-                          {sourceSearchQuery && (
-                            <button
-                              onClick={() => setSourceSearchQuery("")}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            >
-                              <X className="size-4" />
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Source list */}
-                        <div className="max-h-[300px] overflow-y-auto space-y-2">
-                          {AVAILABLE_KNOWLEDGE_SOURCES
-                            .filter((source) => {
-                              if (!sourceSearchQuery) return true;
-                              const query = sourceSearchQuery.toLowerCase();
-                              return (
-                                source.name.toLowerCase().includes(query) ||
-                                source.description.toLowerCase().includes(query) ||
-                                source.tags.some((tag) => tag.includes(query))
-                              );
-                            })
-                            .map((source) => (
-                              <label
-                                key={source.id}
-                                className={cn(
-                                  "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
-                                  selectedSources.includes(source.id)
-                                    ? "border-primary bg-primary/5"
-                                    : "border-transparent bg-white hover:bg-muted/50"
-                                )}
-                              >
-                                <Checkbox
-                                  checked={selectedSources.includes(source.id)}
-                                  onCheckedChange={() => toggleSourceSelection(source.id)}
-                                />
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    {source.type === "upload" ? (
-                                      <Upload className="size-4 text-blue-500" />
-                                    ) : (
-                                      <Link2 className="size-4 text-emerald-500" />
-                                    )}
-                                    <span className="font-medium">{source.name}</span>
-                                    {suggestedSourceIds.includes(source.id) && (
-                                      <Badge variant="secondary" className="text-xs gap-1">
-                                        <Sparkles className="size-3" />
-                                        Suggested
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    {source.description}
-                                  </p>
-                                </div>
-                              </label>
-                            ))}
-                        </div>
-
-                        {/* Selected count and actions */}
-                        <div className="pt-2 flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">
-                            {selectedSources.length} selected
-                          </span>
-                          <div className="flex gap-2">
-                            {selectedType === "answer" && (
-                              <Button variant="outline" onClick={handleSourceSelectionConfirm}>
-                                Skip for now
-                              </Button>
-                            )}
-                            <Button
-                              onClick={handleSourceSelectionConfirm}
-                              disabled={selectedType === "knowledge" && selectedSources.length === 0}
-                            >
-                              {selectedSources.length > 0
-                                ? `Connect ${selectedSources.length} source${selectedSources.length !== 1 ? "s" : ""}`
-                                : selectedType === "answer"
-                                ? "Continue without sources"
-                                : "Select at least one document"}
-                            </Button>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {isTyping && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <div className="flex gap-1">
-                      <span className="size-2 bg-muted-foreground/50 rounded-full animate-bounce" />
-                      <span
-                        className="size-2 bg-muted-foreground/50 rounded-full animate-bounce"
-                        style={{ animationDelay: "0.1s" }}
-                      />
-                      <span
-                        className="size-2 bg-muted-foreground/50 rounded-full animate-bounce"
-                        style={{ animationDelay: "0.2s" }}
-                      />
-                    </div>
-                    {statusMessage && <span>{statusMessage}</span>}
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Chat input */}
-              <div className="p-4">
-                <div className="relative">
-                  <Textarea
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Ask anything"
-                    className="min-h-[80px] pr-14 resize-none rounded-xl border-muted-foreground/20"
-                    disabled={isTyping || showConfirmButtons || showTypeSelector || showSourceSelector || showTypeConfirmation || showTriggerPhrases || showGuardrails}
-                  />
-                  <Button
-                    size="icon"
-                    onClick={handleSendMessage}
-                    disabled={!inputValue.trim() || isTyping || showConfirmButtons || showTypeSelector || showSourceSelector || showTypeConfirmation || showTriggerPhrases || showGuardrails}
-                    aria-label="Send message"
-                    className="absolute bottom-3 right-3 size-8 rounded-lg"
-                  >
-                    <Send className="size-4" />
-                  </Button>
-                </div>
+                ... chat content hidden ...
               </div>
             </>
-          ) : (
+          )}
+          */}
+
+          {activeTab === "configure" ? (
             /* Configure tab content - Enhanced */
             <div className="flex-1 overflow-y-auto p-6">
               <div className="max-w-2xl mx-auto space-y-8">
@@ -2651,6 +2297,173 @@ export default function AgentBuilderPage() {
                   )}
                 </div>
 
+              </div>
+            </div>
+          ) : (
+            /* Access tab content - Postman-style sharing */
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="max-w-2xl mx-auto space-y-6">
+                {/* Header */}
+                <h2 className="text-base font-semibold">Share agent</h2>
+
+                {/* Add people/teams search */}
+                <div className="relative">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Add people or teams..."
+                      className="pl-9"
+                      value={accessSearchQuery}
+                      onChange={(e) => {
+                        setAccessSearchQuery(e.target.value);
+                        setShowAccessDropdown(e.target.value.length > 0);
+                      }}
+                      onFocus={() => accessSearchQuery.length > 0 && setShowAccessDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowAccessDropdown(false), 150)}
+                    />
+                  </div>
+
+                  {/* Search dropdown suggestions */}
+                  {showAccessDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-1 border rounded-lg shadow-lg bg-white p-1 z-10">
+                  <p className="text-xs font-medium text-muted-foreground px-3 py-2">Teams</p>
+                  {[
+                    { id: "it", name: "IT", color: "blue", bgClass: "bg-blue-100", textClass: "text-blue-600" },
+                    { id: "hr", name: "HR", color: "emerald", bgClass: "bg-emerald-100", textClass: "text-emerald-600" },
+                    { id: "finance", name: "Finance", color: "amber", bgClass: "bg-amber-100", textClass: "text-amber-600" },
+                  ].filter(t => !addedAccessItems.find(a => a.id === t.id)).map(team => (
+                    <button
+                      key={team.id}
+                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-muted/50 rounded-md text-left"
+                      onClick={() => {
+                        setAddedAccessItems(prev => [...prev, { ...team, type: "team" }]);
+                        setAccessSearchQuery("");
+                        setShowAccessDropdown(false);
+                      }}
+                    >
+                      <div className={`size-8 rounded-full ${team.bgClass} flex items-center justify-center`}>
+                        <Users className={`size-4 ${team.textClass}`} />
+                      </div>
+                      <span className="text-sm">{team.name}</span>
+                    </button>
+                  ))}
+                  <div className="border-t my-1" />
+                  <p className="text-xs font-medium text-muted-foreground px-3 py-2">People</p>
+                  {[
+                    { id: "jd", name: "John Doe", email: "john.doe@acme.com", initials: "JD", color: "purple", bgClass: "bg-purple-100", textClass: "text-purple-600" },
+                    { id: "js", name: "Jane Smith", email: "jane.smith@acme.com", initials: "JS", color: "rose", bgClass: "bg-rose-100", textClass: "text-rose-600" },
+                  ].filter(u => !addedAccessItems.find(a => a.id === u.id)).map(user => (
+                    <button
+                      key={user.id}
+                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-muted/50 rounded-md text-left"
+                      onClick={() => {
+                        setAddedAccessItems(prev => [...prev, { ...user, type: "user" }]);
+                        setAccessSearchQuery("");
+                        setShowAccessDropdown(false);
+                      }}
+                    >
+                      <div className={`size-8 rounded-full ${user.bgClass} flex items-center justify-center`}>
+                        <span className={`text-xs font-medium ${user.textClass}`}>{user.initials}</span>
+                      </div>
+                      <div>
+                        <p className="text-sm">{user.name}</p>
+                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                      </div>
+                    </button>
+                  ))}
+                  </div>
+                  )}
+                </div>
+
+                {/* Current user (owner) */}
+                <div className="flex items-center justify-between py-2">
+                  <div className="flex items-center gap-3">
+                    <div className="size-10 rounded-full bg-purple-100 flex items-center justify-center">
+                      <span className="text-sm font-medium text-purple-600">EW</span>
+                    </div>
+                    <span className="font-medium text-sm">Erica Wilhelmy (You)</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">Owner</span>
+                </div>
+
+                {/* Added teams/users */}
+                {addedAccessItems.map(item => (
+                  <div key={item.id} className="flex items-center justify-between py-2">
+                    <div className="flex items-center gap-3">
+                      {item.type === "team" ? (
+                        <div className={`size-10 rounded-full ${item.bgClass} flex items-center justify-center`}>
+                          <Users className={`size-5 ${item.textClass}`} />
+                        </div>
+                      ) : (
+                        <div className={`size-10 rounded-full ${item.bgClass} flex items-center justify-center`}>
+                          <span className={`text-sm font-medium ${item.textClass}`}>{item.initials}</span>
+                        </div>
+                      )}
+                      {item.type === "team" ? (
+                        <span className="font-medium text-sm">{item.name}</span>
+                      ) : (
+                        <div>
+                          <p className="font-medium text-sm">{item.name}</p>
+                          <p className="text-xs text-muted-foreground">{item.email}</p>
+                        </div>
+                      )}
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+                          Can view
+                          <ChevronDown className="size-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-52">
+                        <DropdownMenuItem>
+                          Can edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="flex items-center justify-between">
+                          Can view
+                          <Check className="size-4" />
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setAddedAccessItems(prev => prev.filter(a => a.id !== item.id))}
+                        >
+                          Remove
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ))}
+
+                {/* General access section */}
+                <div className="space-y-3 pt-2">
+                  <h3 className="text-sm font-medium text-muted-foreground">General access</h3>
+
+                  {/* Workspace access */}
+                  <div className="flex items-center justify-between py-2">
+                    <div className="flex items-center gap-3">
+                      <div className="size-10 rounded-full bg-muted flex items-center justify-center">
+                        <Landmark className="size-5 text-muted-foreground" />
+                      </div>
+                      <span className="font-medium text-sm">Acme workspace</span>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+                          Can view
+                          <ChevronDown className="size-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem>
+                          Can edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="flex items-center justify-between">
+                          Can view
+                          <Check className="size-4" />
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
               </div>
             </div>
           )}
