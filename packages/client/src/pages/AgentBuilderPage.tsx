@@ -153,15 +153,16 @@ const AVAILABLE_WORKFLOWS = [
 ];
 
 // Available skills for the Add Skill modal
+// linkedAgent: null = available, string = name of agent using this skill
 const AVAILABLE_SKILLS = [
-  { id: "lookup-birthday", name: "Lookup employee birthday", author: "System", icon: Calendar, starters: ["When is my coworker's birthday?", "Look up a birthday"] },
-  { id: "reset-password", name: "Reset password", author: "IT Team", icon: Key, starters: ["I forgot my password", "Reset my password", "I need a new password"] },
-  { id: "check-pto", name: "Check PTO balance", author: "HR Team", icon: Clock, starters: ["How much PTO do I have?", "Check my time off balance", "How many vacation days left?"] },
-  { id: "verify-i9", name: "Verify I-9 forms", author: "Compliance", icon: ShieldCheck, starters: ["Check my I-9 status", "Is my I-9 complete?"] },
-  { id: "check-background", name: "Check background status", author: "HR Team", icon: Users, starters: ["What's my background check status?", "Is my background check done?"] },
-  { id: "unlock-account", name: "Unlock account", author: "IT Team", icon: Lock, starters: ["My account is locked", "Unlock my account", "I can't log in"] },
-  { id: "submit-expense", name: "Submit expense report", author: "Finance", icon: Briefcase, starters: ["Submit an expense", "I need to file an expense report", "How do I get reimbursed?"] },
-  { id: "request-access", name: "Request system access", author: "IT Team", icon: Key, starters: ["Request access to a system", "I need access to...", "How do I get permissions?"] },
+  { id: "lookup-birthday", name: "Lookup employee birthday", author: "System", icon: Calendar, starters: ["When is my coworker's birthday?", "Look up a birthday"], linkedAgent: null },
+  { id: "reset-password", name: "Reset password", author: "IT Team", icon: Key, starters: ["I forgot my password", "Reset my password", "I need a new password"], linkedAgent: "HelpDesk Advisor" },
+  { id: "check-pto", name: "Check PTO balance", author: "HR Team", icon: Clock, starters: ["How much PTO do I have?", "Check my time off balance", "How many vacation days left?"], linkedAgent: "PTO Balance Checker" },
+  { id: "verify-i9", name: "Verify I-9 forms", author: "Compliance", icon: ShieldCheck, starters: ["Check my I-9 status", "Is my I-9 complete?"], linkedAgent: "Compliance Checker" },
+  { id: "check-background", name: "Check background status", author: "HR Team", icon: Users, starters: ["What's my background check status?", "Is my background check done?"], linkedAgent: null },
+  { id: "unlock-account", name: "Unlock account", author: "IT Team", icon: Lock, starters: ["My account is locked", "Unlock my account", "I can't log in"], linkedAgent: "HelpDesk Advisor" },
+  { id: "submit-expense", name: "Submit expense report", author: "Finance", icon: Briefcase, starters: ["Submit an expense", "I need to file an expense report", "How do I get reimbursed?"], linkedAgent: null },
+  { id: "request-access", name: "Request system access", author: "IT Team", icon: Key, starters: ["Request access to a system", "I need access to...", "How do I get permissions?"], linkedAgent: "HelpDesk Advisor" },
 ];
 
 // Icon picker options
@@ -3474,42 +3475,51 @@ export default function AgentBuilderPage() {
                 })
                 .map((skill) => {
                   const isAlreadyAdded = config.workflows.includes(skill.name);
+                  const isLinkedToOther = skill.linkedAgent !== null;
                   const isSelected = selectedSkills.includes(skill.name);
                   const SkillIcon = skill.icon;
+                  const isDisabled = isAlreadyAdded || isLinkedToOther;
 
                   return (
-                    <button
+                    <div
                       key={skill.id}
                       className={cn(
                         "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors",
-                        isAlreadyAdded ? "opacity-50 cursor-not-allowed" : "hover:bg-muted/50",
-                        isSelected && !isAlreadyAdded && "bg-primary/5 border border-primary/20"
+                        isDisabled ? "opacity-60" : "hover:bg-muted/50 cursor-pointer",
+                        isSelected && !isDisabled && "bg-primary/5 border border-primary/20"
                       )}
                       onClick={() => {
-                        if (isAlreadyAdded) return;
+                        if (isDisabled) return;
                         setSelectedSkills((prev) =>
                           prev.includes(skill.name)
                             ? prev.filter((s) => s !== skill.name)
                             : [...prev, skill.name]
                         );
                       }}
-                      disabled={isAlreadyAdded}
                     >
                       <div className={cn(
                         "size-10 rounded-lg flex items-center justify-center flex-shrink-0",
-                        isSelected && !isAlreadyAdded ? "bg-primary/10" : "bg-purple-50"
+                        isSelected && !isDisabled ? "bg-primary/10" : "bg-purple-50"
                       )}>
                         <SkillIcon className={cn(
                           "size-5",
-                          isSelected && !isAlreadyAdded ? "text-primary" : "text-purple-600"
+                          isSelected && !isDisabled ? "text-primary" : "text-purple-600"
                         )} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium">{skill.name}</p>
-                        <p className="text-xs text-muted-foreground">{skill.author}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {isLinkedToOther ? (
+                            <>Used by <span className="font-medium">{skill.linkedAgent}</span></>
+                          ) : (
+                            skill.author
+                          )}
+                        </p>
                       </div>
                       {isAlreadyAdded ? (
                         <span className="text-xs text-muted-foreground">Added</span>
+                      ) : isLinkedToOther ? (
+                        <span className="text-xs text-primary cursor-pointer">Duplicate in Actions</span>
                       ) : (
                         <Switch
                           checked={isSelected}
@@ -3523,7 +3533,7 @@ export default function AgentBuilderPage() {
                           onClick={(e) => e.stopPropagation()}
                         />
                       )}
-                    </button>
+                    </div>
                   );
                 })}
               {AVAILABLE_SKILLS.filter((skill) => {
