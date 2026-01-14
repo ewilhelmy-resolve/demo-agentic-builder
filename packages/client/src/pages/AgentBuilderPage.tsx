@@ -15,19 +15,17 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  ArrowLeft, HelpCircle, Send, Check, Play, Clock, FileText, Workflow, MessageSquare,
-  Upload, Link2, Search, X, Sparkles, Plus, Trash2, Squirrel, ChevronDown, Brain,
+  ArrowLeft, HelpCircle, Send, Check, Clock, FileText, Workflow, MessageSquare,
+  Link2, Search, X, Sparkles, Plus, Trash2, Squirrel, ChevronDown, Brain,
   RotateCcw,
   // Icon picker icons
   ShieldCheck, TrendingUp, BookOpen, ClipboardList, LineChart, Briefcase, Users,
@@ -303,7 +301,7 @@ export default function AgentBuilderPage() {
   const [inputValue, setInputValue] = useState("");
   const [step, setStep] = useState<ConversationStep>(isEditing || isDuplicate ? "done" : "start");
   const [isTyping, setIsTyping] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [_statusMessage, _setStatusMessage] = useState<string | null>(null);
   const [config, setConfig] = useState<AgentConfig>(duplicatedConfig || savedAgent || {
     name: agentName,
     description: "",
@@ -324,18 +322,18 @@ export default function AgentBuilderPage() {
 
   // Legacy button states (for old flow)
   const [showConfirmButtons, setShowConfirmButtons] = useState(false);
-  const [showKnowledgeButtons, setShowKnowledgeButtons] = useState(false);
-  const [showWorkflowButtons, setShowWorkflowButtons] = useState(false);
+  const [_showKnowledgeButtons, _setShowKnowledgeButtons] = useState(false);
+  const [_showWorkflowButtons, _setShowWorkflowButtons] = useState(false);
 
   // Selection UI states (new flow)
   const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [showSourceSelector, setShowSourceSelector] = useState(false);
   const [selectedType, setSelectedType] = useState<"answer" | "knowledge" | "workflow" | null>(null);
-  const [suggestedType, setSuggestedType] = useState<"answer" | "knowledge" | "workflow">("answer");
+  const [_suggestedType, _setSuggestedType] = useState<"answer" | "knowledge" | "workflow">("answer");
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
-  const [selectedWorkflows, setSelectedWorkflows] = useState<string[]>([]);
-  const [sourceSearchQuery, setSourceSearchQuery] = useState("");
-  const [suggestedSourceIds, setSuggestedSourceIds] = useState<string[]>([]);
+  const [_selectedWorkflows, _setSelectedWorkflows] = useState<string[]>([]);
+  const [_sourceSearchQuery, _setSourceSearchQuery] = useState("");
+  const [_suggestedSourceIds, _setSuggestedSourceIds] = useState<string[]>([]);
   const [showTypeConfirmation, setShowTypeConfirmation] = useState(false);
   const [showTriggerPhrases, setShowTriggerPhrases] = useState(false);
   const [suggestedTriggerPhrases, setSuggestedTriggerPhrases] = useState<string[]>([]);
@@ -760,7 +758,7 @@ export default function AgentBuilderPage() {
         const updatedConfig = { ...config, completionCriteria: input };
         const inferredType = inferAgentType(updatedConfig);
         setConfig(updatedConfig);
-        setSuggestedType(inferredType);
+        _setSuggestedType(inferredType);
         setSelectedType(inferredType);
         setStep("select_type");
 
@@ -930,7 +928,7 @@ export default function AgentBuilderPage() {
     }
   };
 
-  const handleConfirm = () => {
+  const _handleConfirm = () => {
     setShowConfirmButtons(false);
 
     const userMessage: Message = {
@@ -955,7 +953,7 @@ export default function AgentBuilderPage() {
           },
         ]);
         setIsTyping(false);
-        setShowKnowledgeButtons(true);
+        _setShowKnowledgeButtons(true);
       }, 800);
     } else if (config.agentType === "knowledge") {
       setIsTyping(true);
@@ -969,7 +967,7 @@ export default function AgentBuilderPage() {
           },
         ]);
         setIsTyping(false);
-        setShowKnowledgeButtons(true);
+        _setShowKnowledgeButtons(true);
       }, 800);
     } else if (config.agentType === "workflow") {
       setIsTyping(true);
@@ -983,13 +981,13 @@ export default function AgentBuilderPage() {
           },
         ]);
         setIsTyping(false);
-        setShowWorkflowButtons(true);
+        _setShowWorkflowButtons(true);
       }, 800);
     }
   };
 
-  const handleAddKnowledgeSources = () => {
-    setShowKnowledgeButtons(false);
+  const _handleAddKnowledgeSources = () => {
+    _setShowKnowledgeButtons(false);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -1020,8 +1018,8 @@ export default function AgentBuilderPage() {
     }, 1000);
   };
 
-  const handleSkipKnowledgeSources = () => {
-    setShowKnowledgeButtons(false);
+  const _handleSkipKnowledgeSources = () => {
+    _setShowKnowledgeButtons(false);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -1042,12 +1040,12 @@ export default function AgentBuilderPage() {
       addAssistantMessage(
         "Knowledge sources are required for Knowledge Agents. Please select at least one document to continue."
       );
-      setShowKnowledgeButtons(true);
+      _setShowKnowledgeButtons(true);
     }
   };
 
-  const handleAddWorkflows = () => {
-    setShowWorkflowButtons(false);
+  const _handleAddWorkflows = () => {
+    _setShowWorkflowButtons(false);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -1079,7 +1077,7 @@ export default function AgentBuilderPage() {
   };
 
   // Handler for type selection confirmation (new flow)
-  const handleTypeSelectionConfirm = () => {
+  const _handleTypeSelectionConfirm = () => {
     if (!selectedType) return;
 
     setShowTypeSelector(false);
@@ -1095,11 +1093,11 @@ export default function AgentBuilderPage() {
     // Move to confirmation step with Overall Understanding
     setStep("confirm_type");
     setIsTyping(true);
-    setStatusMessage("Generating agent understanding...");
+    _setStatusMessage("Generating agent understanding...");
 
     setTimeout(() => {
       setIsTyping(false);
-      setStatusMessage(null);
+      _setStatusMessage(null);
 
       const understanding = generateOverallUnderstanding(config, selectedType);
       const typeLabel = AGENT_TYPE_INFO[selectedType].label;
@@ -1117,7 +1115,7 @@ export default function AgentBuilderPage() {
   };
 
   // Handler for confirming the agent type understanding
-  const handleTypeConfirmationConfirm = () => {
+  const _handleTypeConfirmationConfirm = () => {
     setShowTypeConfirmation(false);
 
     const userMessage: Message = {
@@ -1130,7 +1128,7 @@ export default function AgentBuilderPage() {
     // Move to trigger phrases step
     setStep("trigger_phrases");
     setIsTyping(true);
-    setStatusMessage("Generating example phrases...");
+    _setStatusMessage("Generating example phrases...");
 
     // Generate trigger phrases based on config
     const phrases = generateTriggerPhrases(config);
@@ -1138,7 +1136,7 @@ export default function AgentBuilderPage() {
 
     setTimeout(() => {
       setIsTyping(false);
-      setStatusMessage(null);
+      _setStatusMessage(null);
 
       const typeLabel = selectedType ? AGENT_TYPE_INFO[selectedType].shortLabel : "agent";
       const phrasesList = phrases.map((p, i) => `${i + 1}. "${p}"`).join("\n");
@@ -1156,7 +1154,7 @@ export default function AgentBuilderPage() {
   };
 
   // Handler for continuing after trigger phrases
-  const handleTriggerPhrasesConfirm = () => {
+  const _handleTriggerPhrasesConfirm = () => {
     setShowTriggerPhrases(false);
 
     // Save the suggested phrases to config as conversation starters
@@ -1225,18 +1223,18 @@ export default function AgentBuilderPage() {
     // Move to source/workflow selection based on type
     setStep("select_sources");
     setIsTyping(true);
-    setStatusMessage("Loading available resources...");
+    _setStatusMessage("Loading available resources...");
 
     // Calculate suggested sources based on agent config
     const suggested = suggestRelevantSources(config);
-    setSuggestedSourceIds(suggested);
+    _setSuggestedSourceIds(suggested);
     // Pre-select suggested sources
     setSelectedSources(suggested);
-    setSourceSearchQuery("");
+    _setSourceSearchQuery("");
 
     setTimeout(() => {
       setIsTyping(false);
-      setStatusMessage(null);
+      _setStatusMessage(null);
 
       const hasSuggestions = suggested.length > 0;
 
@@ -1277,13 +1275,13 @@ export default function AgentBuilderPage() {
   };
 
   // Handler for skipping guardrails
-  const handleGuardrailsSkip = () => {
+  const _handleGuardrailsSkip = () => {
     setGuardrailInput("none");
     handleGuardrailsSubmit();
   };
 
   // Handler for adjusting the agent type (goes back to selection)
-  const handleTypeConfirmationAdjust = () => {
+  const _handleTypeConfirmationAdjust = () => {
     setShowTypeConfirmation(false);
 
     const userMessage: Message = {
@@ -1312,10 +1310,10 @@ export default function AgentBuilderPage() {
   };
 
   // Handler for source/workflow selection confirmation
-  const handleSourceSelectionConfirm = () => {
+  const _handleSourceSelectionConfirm = () => {
     const isWorkflowAgent = selectedType === "workflow";
     const isKnowledgeAgent = selectedType === "knowledge";
-    const selected = isWorkflowAgent ? selectedWorkflows : selectedSources;
+    const selected = isWorkflowAgent ? _selectedWorkflows : selectedSources;
 
     // Validate required selections
     if ((isWorkflowAgent || isKnowledgeAgent) && selected.length === 0) {
@@ -1326,7 +1324,7 @@ export default function AgentBuilderPage() {
     setShowSourceSelector(false);
 
     const selectedNames = isWorkflowAgent
-      ? selectedWorkflows.map((id) => AVAILABLE_WORKFLOWS.find((w) => w.id === id)?.name).filter(Boolean)
+      ? _selectedWorkflows.map((id) => AVAILABLE_WORKFLOWS.find((w) => w.id === id)?.name).filter(Boolean)
       : selectedSources.map((id) => AVAILABLE_KNOWLEDGE_SOURCES.find((s) => s.id === id)?.name).filter(Boolean);
 
     const userMessage: Message = {
@@ -1354,11 +1352,11 @@ export default function AgentBuilderPage() {
     }
 
     setIsTyping(true);
-    setStatusMessage("Finalizing configuration...");
+    _setStatusMessage("Finalizing configuration...");
 
     setTimeout(() => {
       setIsTyping(false);
-      setStatusMessage(null);
+      _setStatusMessage(null);
 
       const resourceType = isWorkflowAgent ? "workflows" : "knowledge sources";
       const resourceList = selectedNames.length > 0
@@ -1380,13 +1378,13 @@ export default function AgentBuilderPage() {
   };
 
   // Toggle source selection
-  const toggleSourceSelection = (id: string) => {
+  const _toggleSourceSelection = (id: string) => {
     setSelectedSources((prev) =>
       prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
     );
   };
 
-  const handleChangeType = () => {
+  const _handleChangeType = () => {
     setShowConfirmButtons(false);
 
     const userMessage: Message = {
@@ -1485,7 +1483,7 @@ export default function AgentBuilderPage() {
     processUserInput(input);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const _handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
