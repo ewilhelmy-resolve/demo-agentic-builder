@@ -290,22 +290,6 @@ export default function AgentsPage() {
                       Adding skills to your agent
                     </button>
                   </div>
-                  <div className="flex gap-28">
-                    <button
-                      onClick={() => {/* TODO: link to docs */}}
-                      className="flex items-center gap-2 text-sm font-semibold hover:text-primary transition-colors"
-                    >
-                      <FileText className="size-4" />
-                      Connecting knowledge
-                    </button>
-                    <button
-                      onClick={() => setTemplateModalOpen(true)}
-                      className="flex items-center gap-2 text-sm font-semibold hover:text-primary transition-colors"
-                    >
-                      <Search className="size-4" />
-                      Browse templates
-                    </button>
-                  </div>
                 </div>
               </div>
 
