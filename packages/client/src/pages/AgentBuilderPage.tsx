@@ -1707,7 +1707,7 @@ export default function AgentBuilderPage() {
             variant="outline"
             className="gap-2"
             onClick={() => navigate(isEditing ? `/agents/${agentId}/test` : "/agents/test", {
-              state: { agentConfig: config }
+              state: { config }
             })}
           >
             <Play className="size-4" />
