@@ -24,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  ArrowLeft, HelpCircle, Send, Check, Clock, FileText, Workflow, MessageSquare,
+  ArrowLeft, HelpCircle, Send, Check, Play, Clock, FileText, Workflow, MessageSquare,
   Link2, Search, X, Sparkles, Plus, Trash2, Squirrel, ChevronDown, Brain,
   RotateCcw,
   // Icon picker icons
@@ -1703,6 +1703,16 @@ export default function AgentBuilderPage() {
             <HelpCircle className="size-4" />
             How agent builder works
           </Button>
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => navigate(isEditing ? `/agents/${agentId}/test` : "/agents/test", {
+              state: { agentConfig: config }
+            })}
+          >
+            <Play className="size-4" />
+            Test
+          </Button>
           {isEditing ? (
             <>
               <Button
@@ -1730,9 +1740,9 @@ export default function AgentBuilderPage() {
       </header>
 
       {/* Main content */}
-      <div className="flex flex-1 overflow-hidden p-4 gap-4">
-        {/* Left panel - Chat */}
-        <div className="flex flex-col flex-1 bg-white rounded-xl">
+      <div className="flex flex-1 overflow-hidden p-4 gap-4 justify-center">
+        {/* Left panel - Configure/Access */}
+        <div className="flex flex-col flex-1 max-w-3xl bg-white rounded-xl">
           {/* Centered Tabs */}
           <div className="flex justify-center pt-4 pb-2">
             <Tabs
@@ -2561,7 +2571,7 @@ export default function AgentBuilderPage() {
         </div>
 
         {/* Right panel - Preview (interactive) */}
-        <div className="w-[400px] flex flex-col bg-white rounded-xl">
+        <div className="w-[400px] flex-shrink-0 flex flex-col bg-white rounded-xl">
           <div className="p-4 border-b flex items-center justify-between">
             <div>
               <h2 className="font-medium">Preview</h2>
